@@ -852,3 +852,718 @@ Next:
 
 Awaiting Phase 01 planning.
 
+
+
+\---
+
+
+
+\## TASK-01.01 — PostgreSQL \& Prisma Foundation
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance); PostgreSQL connectivity
+
+NOT verified (no instance available, KI-007)
+
+
+
+Changes:
+
+
+
+\- Prisma 7.10.1 + PostgreSQL foundation in apps/api: schema
+
+  (no models), prisma.config.ts, getPrisma() lazy client
+
+\- api scripts: postinstall/typecheck/build generate the client;
+
+  db:\* scripts (also at root)
+
+\- Generated client ignored by Git/ESLint/Prettier (anchored)
+
+\- apps/api/.env.example: DATABASE\_URL documentation
+
+\- KNOWN\_ISSUES.md: KI-007 (no local PostgreSQL)
+
+
+
+Dependencies introduced (apps/api):
+
+@prisma/client, @prisma/adapter-pg, pg; dev: prisma, @types/pg
+
+
+
+Verification:
+
+validate/generate PASS, clean-state typecheck/build PASS,
+
+lint/format PASS, tests 3/3 + E2E 1/1 PASS, health PASS,
+
+web exposure PASS; DB connectivity NOT\_RUN.
+
+
+
+Production code changed:
+
+
+
+apps/api/src/db/prisma.ts (not used by any route yet).
+
+
+
+Closure prerequisite (human-approved Docker, 2026-10-20):
+
+\- compose.dev.yml: local development PostgreSQL 17 (postgres:17,
+
+  server 17.11), loopback port 5432, named volume, healthcheck
+
+\- Root scripts db:start, db:stop, db:status
+
+\- apps/api/.env.example local Docker URL comment; README local
+
+  database section
+
+\- Verified Prisma connectivity (db execute, getPrisma query);
+
+  regression PASS
+
+\- KNOWN\_ISSUES.md: KI-007 RESOLVED
+
+
+
+\---
+
+
+
+\## TASK-01.02 — Core Identity \& Location Schema
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- schema.prisma: enum UserRole; models User, Location
+
+\- Migration 20261020125104\_core\_identity\_locations (reviewed
+
+  with --create-only, then applied to local maba\_printing\_dev)
+
+\- Prisma Client regenerated
+
+\- KNOWN\_ISSUES.md: KI-008 (case-sensitive email uniqueness),
+
+  KI-009 (migration line endings vs checksums, to verify)
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+validate/generate/migrate/status PASS, PostgreSQL inspection
+
+PASS, rolled-back constraint and client probes PASS, clean-state
+
+typecheck/build PASS, lint/format PASS, tests 3/3, E2E 1/1,
+
+health PASS.
+
+
+
+Production code changed:
+
+
+
+Database schema and migration only; no endpoints or services.
+
+
+
+\---
+
+
+
+\## TASK-01.03 — Catalog Schema
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- schema.prisma: enums PriceType, ProductAvailability; models
+
+  ServiceCategory, Service, LocationService (composite PK),
+
+  ProductCategory, Product (incl. imageRef); Location
+
+  back-relation (TASK-01.03)
+
+\- Migration 20261020130233\_catalog\_foundation (reviewed with
+
+  --create-only, applied to local maba\_printing\_dev)
+
+\- Prisma Client regenerated
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+validate/generate/migrate/status PASS, PostgreSQL inspection
+
+PASS, rolled-back SQL and client probes PASS, clean-state
+
+typecheck/build PASS, lint/format PASS, tests 3/3, E2E 1/1,
+
+health PASS.
+
+
+
+Production code changed:
+
+
+
+Database schema and migration only; no endpoints or services.
+
+
+
+\---
+
+
+
+\## TASK-01.04 — Order Schema
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- schema.prisma: enums OrderType, OrderStatus, HandoverMethod;
+
+  models Order (publicId, customer snapshot, adminNotes),
+
+  OrderItem (catalog snapshots), LaptopServiceRequest,
+
+  SoftwareInstallationRequest (orderId PK); back-relations on
+
+  User, Location, Service, Product
+
+\- Migration 20261020132657\_order\_foundation (reviewed with
+
+  --create-only, applied to local maba\_printing\_dev); all FKs
+
+  ON DELETE RESTRICT
+
+\- Prisma Client regenerated
+
+\- KNOWN\_ISSUES.md: KI-010 (pg deprecation warning via adapter)
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+validate/generate/migrate/status PASS, PostgreSQL inspection
+
+PASS, rolled-back guest/member/snapshot/RESTRICT probes PASS,
+
+client probe PASS, clean-state typecheck/build PASS, lint/format
+
+PASS, tests 3/3, E2E 1/1, health PASS.
+
+
+
+Production code changed:
+
+
+
+Database schema and migration only; no endpoints or services.
+
+
+
+\---
+
+
+
+\## TASK-01.05 — Payment, History, Files Metadata \& Audit Schema
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- schema.prisma: enums PaymentMethod, PaymentStatus; models
+
+  Payment (one per order), OrderStatusHistory (reuses
+
+  OrderStatus), OrderFile (metadata only), AdminAuditLog
+
+  (generic, JSONB metadata), BusinessSettings (typed singleton)
+
+\- Migration 20261020133802\_payment\_history\_files\_audit
+
+  (reviewed with --create-only, applied to local
+
+  maba\_printing\_dev); all FKs ON DELETE RESTRICT
+
+\- Prisma Client regenerated
+
+\- KNOWN\_ISSUES.md: KI-011 (WhatsApp/business-name source of
+
+  truth)
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+validate/generate/migrate/status PASS, PostgreSQL inspection
+
+PASS, rolled-back SQL and client probes PASS, clean-state
+
+typecheck/build PASS, lint/format PASS, tests 3/3, E2E 1/1,
+
+health PASS.
+
+
+
+Production code changed:
+
+
+
+Database schema and migration only; no endpoints or services.
+
+
+
+\---
+
+
+
+\## TASK-01.06 — Database Constraints \& Indexes
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- Migration 20261020135726\_database\_constraints\_indexes
+
+  (reviewed with --create-only, applied to local
+
+  maba\_printing\_dev): 11 indexes, 15 CHECK constraints and the
+
+  unique lower(email) index (custom SQL; no triggers)
+
+\- schema.prisma: @@index entries; comments naming the CHECKs
+
+\- KNOWN\_ISSUES.md: KI-008 resolved at database level; KI-011
+
+  decided (business\_settings authoritative)
+
+\- Prisma Client regenerated
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+validate/generate/migrate/status PASS, empty schema-vs-database
+
+diff, 25 invalid probes rejected and valid cases accepted (rolled
+
+back), index inspection PASS, clean-state typecheck/build PASS,
+
+lint/format PASS, tests 3/3, E2E 1/1, health PASS.
+
+
+
+Production code changed:
+
+
+
+Database migration and schema annotations only; no endpoints or
+
+services.
+
+
+
+\---
+
+
+
+\## TASK-01.07 — Seed \& Development Data
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- apps/api/prisma/seed.ts: synthetic, idempotent local seed
+
+  (business settings, 2 locations, service and ATK catalog,
+
+  location availability); no users, no orders
+
+\- prisma.config.ts: migrations.seed; db:seed scripts (api, root)
+
+\- apps/api/tsconfig.json: include prisma/seed.ts
+
+\- README: migrate + seed steps
+
+
+
+Dependencies introduced:
+
+None (tsx already present).
+
+
+
+Verification:
+
+seed run + reruns PASS with stable counts, convergence and
+
+non-overwrite checks PASS, constraints validated, clean-state
+
+typecheck/build PASS, lint/format PASS, tests 3/3, E2E 1/1,
+
+health PASS.
+
+
+
+Production code changed:
+
+
+
+None (seed script, config and docs only).
+
+
+
+\---
+
+
+
+\## TASK-01.08 — Data Access / Prisma Integration
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- src/db/prisma.ts: DbClient type for repositories
+
+\- src/repositories/: business-settings, location,
+
+  service-catalog, product-catalog read repositories
+
+\- src/repositories/repositories.db.test.ts: read-only DB
+
+  integration tests (guarded to local maba\_printing\_dev)
+
+\- package.json scripts: test:db (api, root); api test excludes
+
+  \*.db.test.ts
+
+\- README: test:db row in the commands table
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+test:db 10/10, constant query counts (no N+1), seed baseline
+
+unchanged, clean-state typecheck/build PASS, lint/format PASS,
+
+tests 3/3, E2E 1/1, health PASS. No schema change or migration.
+
+
+
+Production code changed:
+
+
+
+Backend data-access modules only; no routes or services.
+
+
+
+\---
+
+
+
+\## TASK-01.09 — Database Testing \& Developer Workflow
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+COMPLETED (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+\- Test database maba\_printing\_test (same Docker server);
+
+  TEST\_DATABASE\_URL in apps/api/.env.example and root
+
+  .env.example
+
+\- apps/api/scripts/test-database.ts (guard) and
+
+  scripts/test-database.test.ts (guard unit tests)
+
+\- apps/api/scripts/test-db.ts: prepare / rebuild (test DB only)
+
+\- repositories.db.test.ts: test database, own fixtures, per-test
+
+  rollback
+
+\- Scripts: db:test:prepare, db:test:rebuild, test:db (api, root);
+
+  apps/api/tsconfig.json includes scripts
+
+\- .gitattributes: migration SQL eol=lf (KI-009 resolved)
+
+\- README: development and test database workflows
+
+
+
+Dependencies introduced:
+
+None.
+
+
+
+Verification:
+
+test DB rebuilt from empty (5 migrations, no drift, schema
+
+identical to dev), test:db 11/11 twice, normal tests 7/7, E2E 1/1,
+
+clean-state typecheck/build PASS, lint/format PASS, health PASS,
+
+development database unchanged.
+
+
+
+Production code changed:
+
+
+
+None (test tooling, configuration and docs only).
+
+
+
+\---
+
+
+
+\## TASK-01.10 — Phase 01 Final Verification
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+VERIFICATION PASS (awaiting human acceptance)
+
+
+
+Changes:
+
+
+
+None to code, schema, migrations or databases (verification only;
+
+test database rebuilt; one normal dev seed rerun). Project memory
+
+updated with the result.
+
+
+
+Findings:
+
+F-1 MEDIUM Phase 01 work uncommitted; F-2 LOW README status stale;
+
+F-3 LOW KI-010 not reproducible; INFO items in the report.
+
+
+
+Production code changed:
+
+
+
+None.
+
+
+
+\---
+
+
+
+\## PHASE 01 — Human Acceptance \& Closure
+
+
+
+Date: 2026-10-20
+
+
+
+Status:
+
+ACCEPTED / COMPLETE (human-approved)
+
+
+
+Changes:
+
+
+
+\- README Development Status: Phase 00 COMPLETE, Phase 01
+
+  COMPLETE / ACCEPTED; persistence foundation described; no
+
+  product features claimed; API env note updated
+
+\- KNOWN\_ISSUES.md: KI-010 MONITORING / NOT\_REPRODUCED (history
+
+  kept)
+
+\- PROJECT\_STATE.md / CURRENT\_TASK.md: Phase 01 accepted;
+
+  awaiting Phase 02 planning
+
+
+
+Open:
+
+F-1 Phase 01 work not yet committed to Git (owner action).
+
+
+
+Production code changed:
+
+
+
+None.

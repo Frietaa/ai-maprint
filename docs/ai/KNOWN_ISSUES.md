@@ -218,6 +218,282 @@ shared first or use TypeScript project references.
 
 
 
+\### KI-007 — No Local PostgreSQL Instance
+
+
+
+ID: KI-007
+
+Title: PostgreSQL is not available on the development machine
+
+Severity: Medium
+
+Status: RESOLVED (2026-10-20, TASK-01.01 closure prerequisite,
+
+human-approved Docker use). Local development PostgreSQL 17
+
+(official postgres:17 image, server 17.11) runs via
+
+compose.dev.yml on 127.0.0.1:5432 with the named volume
+
+maba-printing\_postgres-data. Prisma connected using
+
+apps/api/.env (db execute SELECT 1, app getPrisma() query).
+
+Ongoing dependency: a new machine needs Docker running, an
+
+apps/api/.env with DATABASE\_URL, and `npm run db:start`.
+
+No OS-level PostgreSQL is installed.
+
+Previous status: OPEN (blocked database-dependent verification)
+
+Discovered In: TASK-01.01
+
+Description: No psql/postgres binaries on PATH, no postgres\*
+
+Windows service, and nothing listening on port 5432. Docker
+
+Desktop is installed but was not used (requires approval).
+
+Impact: Prisma validate/generate and all Phase-00 checks work,
+
+but migrations (TASK-01.02 onwards), connectivity checks and
+
+database tests cannot run until a PostgreSQL instance and a
+
+local apps/api/.env DATABASE\_URL exist.
+
+Recommended Action: Owner decides between a native PostgreSQL
+
+install or an approved Docker-based PostgreSQL for development,
+
+then sets DATABASE\_URL in apps/api/.env (never committed).
+
+
+
+\### KI-008 — Case-Sensitive Email Uniqueness
+
+
+
+ID: KI-008
+
+Title: users.email unique index is case-sensitive
+
+Severity: Low
+
+Status: RESOLVED at database level (TASK-01.06, 2026-10-20):
+
+unique expression index users\_email\_lower\_key on lower(email)
+
+rejects case-only duplicates (verified with a rolled-back probe).
+
+Application normalization (trim + lowercase) is still required in
+
+the authentication task; this index is defense in depth.
+
+Previous status: OPEN (non-blocking)
+
+Discovered In: TASK-01.02 database verification
+
+Description: The users\_email\_key unique index compares email
+
+text exactly, so "A@example.test" and "a@example.test" can both
+
+be stored (confirmed with a rolled-back probe).
+
+Impact: Without normalization, one person could end up with two
+
+accounts that differ only by letter case.
+
+Recommended Action: The authentication task must normalize
+
+emails (e.g. trim + lowercase) before lookup and storage;
+
+TASK-01.06 may additionally add a case-insensitive unique index
+
+(e.g. on lower(email)) if approved.
+
+
+
+\### KI-009 — Migration File Line Endings vs Prisma Checksums
+
+
+
+ID: KI-009
+
+Title: migration.sql line endings may change on Windows checkout
+
+Severity: Low
+
+Status: RESOLVED (TASK-01.09, 2026-10-20)
+
+Evidence: (1) Against the disposable maba\_printing\_test database,
+
+Prisma 7.10.1 `migrate status` / `migrate dev` accepted CRLF copies
+
+of all applied migrations without a modification warning, while a
+
+control copy with a real content change was reported as "modified
+
+after it was applied", so the checksum check ignores CRLF-only
+
+differences. (2) In a scratch Git repository with
+
+core.autocrlf=true, a Windows checkout turned an LF migration into
+
+CRLF without .gitattributes, and kept it LF with the rule; a CRLF
+
+file added under the rule was normalized to LF. The working-tree
+
+migration files are LF and byte-identical to the applied
+
+checksums (sha256 matches \_prisma\_migrations).
+
+Mitigation added: .gitattributes rule
+
+apps/api/prisma/migrations/\*\*/\*.sql text eol=lf (migration SQL
+
+only). Applied migration files were not rewritten.
+
+Previous status: OPEN (to verify; non-blocking now)
+
+Discovered In: TASK-01.02
+
+Description: Prisma generated migration.sql with LF endings; this
+
+repository runs with core.autocrlf=true, so a later checkout may
+
+produce CRLF. Prisma records a checksum per applied migration;
+
+whether that checksum is line-ending independent was not
+
+verified.
+
+Impact: If not independent, `prisma migrate dev` on another
+
+checkout could report the applied migration as modified.
+
+Recommended Action: In TASK-01.09 (database developer workflow),
+
+verify the behavior safely and, if needed, add a .gitattributes
+
+rule such as `*.sql text eol=lf` for prisma/migrations. Never
+
+resolve a checksum warning with a database reset.
+
+
+
+\### KI-010 — pg Deprecation Warning from Prisma Adapter
+
+
+
+ID: KI-010
+
+Title: pg warns about concurrent client.query() calls
+
+Severity: Low
+
+Status: MONITORING — NOT\_REPRODUCED (2026-10-20, TASK-01.10
+
+verification): the warning did not appear in the database tests or
+
+in two targeted reproductions on maba\_printing\_test (nested
+
+creates inside an interactive transaction, including an order with
+
+items, laptop request, payment and status history; rolled back).
+
+No dependency was changed. Recheck when real order-creation
+
+transactions are implemented, and before any pg 9 / adapter
+
+upgrade.
+
+Previous status: OPEN (non-blocking; third-party)
+
+Discovered In: TASK-01.04 Prisma Client probe
+
+Description: A nested create inside a Prisma interactive
+
+transaction printed: "Calling client.query() when the client is
+
+already executing a query is deprecated and will be removed in
+
+pg@9.0". It comes from @prisma/adapter-pg 7.10.1 with pg 8.23.1,
+
+not from project code. The operation succeeded.
+
+Impact: None on pg 8. The declared range pg ^8.23.1 will not
+
+install pg 9 automatically.
+
+Recommended Action: Before any upgrade to pg 9, confirm a
+
+compatible @prisma/adapter-pg release; recheck after Prisma
+
+adapter updates.
+
+
+
+\### KI-011 — Business Configuration Source of Truth
+
+ID: KI-011
+
+Title: WhatsApp number and business name can be configured in two
+
+places
+
+Severity: Low
+
+Status: DECIDED (TASK-01.06, 2026-10-20, task-directed):
+
+business\_settings is authoritative for mutable runtime
+
+operational values (businessName, whatsappNumber, logoRef,
+
+qrisImageRef, socialLinks). Environment variables may serve only
+
+as a later deployment/bootstrap fallback where a task explicitly
+
+requires one; frontend static configuration (brand.ts) must not
+
+hold competing mutable copies (static visual branding only). No
+
+settings API implemented. Not yet recorded as an ADR in
+
+DECISIONS.md (protected document; owner may add it).
+
+Previous status: OPEN (decision needed before the WhatsApp/branding phases)
+
+Discovered In: TASK-01.05
+
+Description: PRD 22 makes the WhatsApp number, business name,
+
+logo, QRIS image and social links owner-editable, so they now
+
+exist in business\_settings. The Architecture also lists a
+
+server env variable WHATSAPP\_NUMBER (43) and a frontend
+
+brand config file apps/web/src/config/brand.ts (44).
+
+Impact: Without a rule, the number/name shown to customers could
+
+differ depending on which source a feature reads.
+
+Recommended Action: Before implementing WhatsApp deep links and
+
+branding, decide the precedence (e.g. business\_settings is
+
+authoritative, env WHATSAPP\_NUMBER only a bootstrap fallback,
+
+brand.ts for static visual branding only) and record it in
+
+DECISIONS.md if approved.
+
+
+
 \---
 
 

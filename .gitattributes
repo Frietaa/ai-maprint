@@ -1,0 +1,6 @@
+# Prisma migration SQL: always LF in the repository and in every checkout
+# (KI-009). Prisma records a checksum per applied migration; LF everywhere
+# keeps the files byte-identical to what was applied, whatever a developer's
+# core.autocrlf setting is. Scope is deliberately limited to migration SQL;
+# all other files keep the existing Git line-ending behaviour.
+apps/api/prisma/migrations/**/*.sql text eol=lf

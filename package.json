@@ -19,7 +19,19 @@
     "dev:api": "npm run dev -w @maba-printing/api",
     "start:api": "npm run start -w @maba-printing/api",
     "test:e2e": "npm run test:e2e -w @maba-printing/web",
-    "clean": "node -e \"for (const d of ['packages/shared/dist','apps/api/dist','apps/web/dist','apps/api/node_modules/.tmp','apps/web/node_modules/.tmp','apps/web/test-results','apps/web/playwright-report','coverage','apps/web/coverage','apps/api/coverage','packages/shared/coverage']) require('node:fs').rmSync(d, { recursive: true, force: true })\""
+    "test:db": "npm run test:db -w @maba-printing/api",
+    "clean": "node -e \"for (const d of ['packages/shared/dist','apps/api/dist','apps/web/dist','apps/api/node_modules/.tmp','apps/web/node_modules/.tmp','apps/web/test-results','apps/web/playwright-report','coverage','apps/web/coverage','apps/api/coverage','packages/shared/coverage']) require('node:fs').rmSync(d, { recursive: true, force: true })\"",
+    "db:validate": "npm run db:validate -w @maba-printing/api",
+    "db:generate": "npm run db:generate -w @maba-printing/api",
+    "db:migrate": "npm run db:migrate -w @maba-printing/api",
+    "db:migrate:status": "npm run db:migrate:status -w @maba-printing/api",
+    "db:seed": "npm run db:seed -w @maba-printing/api",
+    "db:studio": "npm run db:studio -w @maba-printing/api",
+    "db:test:prepare": "npm run db:test:prepare -w @maba-printing/api",
+    "db:test:rebuild": "npm run db:test:rebuild -w @maba-printing/api",
+    "db:start": "docker compose -f compose.dev.yml up -d --wait postgres",
+    "db:stop": "docker compose -f compose.dev.yml stop postgres",
+    "db:status": "docker compose -f compose.dev.yml ps postgres"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -4,6 +4,7 @@ build/
 coverage/
 playwright-report/
 test-results/
+/apps/api/src/generated/
 
 # npm-managed
 package-lock.json

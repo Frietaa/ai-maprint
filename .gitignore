@@ -6,6 +6,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# Generated Prisma Client (recreated by `npm run db:generate` / npm install)
+/apps/api/src/generated/
+
 # Test coverage / reports
 coverage/
 playwright-report/
