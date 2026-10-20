@@ -4,14 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --conditions=development src/server.ts",
+    "dev": "node --watch --conditions=development --import tsx src/server.ts",
     "typecheck": "prisma generate && tsc -b",
     "build": "prisma generate && tsc -b tsconfig.build.json",
     "start": "node dist/server.js",
     "lint": "eslint .",
     "test": "vitest run --exclude \"**/*.db.test.ts\"",
     "test:watch": "vitest --exclude \"**/*.db.test.ts\"",
-    "test:db": "npm run db:test:prepare && vitest run db.test",
+    "test:db": "npm run db:test:prepare && vitest run db.test --no-file-parallelism",
     "postinstall": "prisma generate",
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
@@ -20,7 +20,9 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:test:prepare": "tsx scripts/test-db.ts prepare",
-    "db:test:rebuild": "tsx scripts/test-db.ts rebuild"
+    "db:test:rebuild": "tsx scripts/test-db.ts rebuild",
+    "e2e:api": "tsx --conditions=development scripts/e2e-server.ts",
+    "e2e:fixtures:clean": "tsx scripts/e2e-fixtures.ts clean"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
@@ -34,9 +36,11 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@maba-printing/shared": "*",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "express": "^5.3.0",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "zod": "^4.6.5"
   }
 }

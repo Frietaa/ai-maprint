@@ -1,63 +1,33 @@
 \# MABA PRINTING — Current Task
 
-
-
 \## Task
-
-
 
 None active.
 
-
-
 \## Status
 
-
-
-Phase 01 (Application \& Data Foundation) ACCEPTED and COMPLETE
-
+Phase 02 (Public Read Experience) ACCEPTED and COMPLETE
 (human-approved 2026-10-20).
 
+Last task: PHASE-02 / TASK-02.10 Phase 02 Final Verification: PASS
+(docs/ai/TASK\_02.10.md).
 
+Phase 03 has NOT started.
 
-Last task: PHASE-01 / TASK-01.10 Phase 01 Final Verification: PASS
+\## Carried-forward findings (not fixed at closure)
 
-(docs/ai/TASK\_01.10.md).
-
-
-
-Phase 02 has NOT started.
-
-
-
-\## Closure Housekeeping
-
-
-
-\- README Development Status updated (Phase 00 COMPLETE, Phase 01
-
-  COMPLETE / ACCEPTED; no product features claimed) (F-2).
-
-\- KI-010 set to MONITORING / NOT\_REPRODUCED; recheck with real
-
-  order-creation transactions (F-3).
-
-\- Remaining: F-1, Phase 01 work is not yet committed to Git
-
-  (owner action).
-
-
+\- KI-012: list endpoints not paginated — LOW, deferred.
+\- KI-013: service pages match categories by name — LOW, deferred.
+\- KI-014: tsx watch / Prisma client dev stall — MITIGATED.
+\- Security hardening (rate limiting, full security headers, structured
+  request-ID logging; Architecture §42/§46) — LOW, deferred to an
+  appropriate hardening phase.
+\- Phase-02 work is not yet committed to Git (owner action).
 
 \## Next Step
 
-
-
-Phase 01 accepted; awaiting Phase 02 planning.
-
-
+Phase 02 accepted; awaiting Phase 03 planning.
 
 \## Stop Condition
 
-
-
-STOP. Do not begin Phase 02 without explicit instruction.
+STOP. Do not begin Phase 03 without explicit instruction.

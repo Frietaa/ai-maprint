@@ -494,6 +494,120 @@ DECISIONS.md if approved.
 
 
 
+\### KI-012 — Public Catalog Lists Are Not Paginated
+
+
+
+ID: KI-012
+
+Title: GET /locations, /services and /products return all public rows
+
+Severity: Low
+
+Status: OPEN (deferred by Phase-02 plan)
+
+Discovered In: TASK-02.02
+
+Description: Architecture §47 says growing collections MUST support
+
+pagination. The Phase-02 brief explicitly defers pagination because the
+
+current catalog is small; list responses carry meta.count only.
+
+Impact: None at current catalog size; an ATK catalog of hundreds of rows
+
+would produce large responses.
+
+Recommended Action: Add page/limit (meta.page, limit, total, totalPages
+
+per Architecture §14) when catalog management (admin) can grow the
+
+catalog, before production launch.
+
+
+
+\### KI-013 — Service Pages Match Categories by Name
+
+
+
+ID: KI-013
+
+Title: /printing, /laptop-service and /software-installation select
+
+service categories by name keywords
+
+Severity: Low
+
+Status: OPEN (accepted limitation of the current schema)
+
+Discovered In: TASK-02.05
+
+Description: service\_categories has no column tying a category to one of
+
+the four business lines, and Phase 02 adds no schema migration. Pages
+
+match category names against keywords (e.g. "print"/"cetak",
+
+"laptop"/"komputer", "software"/"instal"/"aplikasi"). If no category
+
+matches, the page shows the whole public service catalog with a note
+
+instead of hiding it.
+
+Impact: An admin-renamed category without any keyword (e.g. "Dokumen")
+
+appears only through the full-catalog fallback.
+
+Recommended Action: When catalog management is built (admin phase),
+
+decide whether to add an explicit business-line field to
+
+service\_categories (additive migration, needs approval) or document the
+
+naming convention for the owner.
+
+
+
+\### KI-014 — tsx watch Stalls When the Prisma Client Is Imported
+
+
+
+ID: KI-014
+
+Title: `tsx watch` with a piped stdin never finishes loading the
+
+generated Prisma client
+
+Severity: Low
+
+Status: MITIGATED (TASK-02.09)
+
+Discovered In: TASK-02.09 (npm run dev verification)
+
+Description: Under `tsx watch` with stdin as a pipe (as `concurrently`
+
+provides in root `npm run dev`), importing apps/api/src/generated/prisma
+
+never completes; plain `tsx`, `node --watch --import tsx` and a TTY
+
+stdin work. Phase 00/01 dev servers never imported the client, so it
+
+surfaced only when the API began serving database data.
+
+Impact: Before the fix, `npm run dev` started the web app but the API
+
+never listened.
+
+Recommended Action: apps/api `dev` uses
+
+`node --watch --conditions=development --import tsx src/server.ts`
+
+(reload on change verified). Recheck `tsx watch` after tsx/Prisma
+
+upgrades; no dependency change made.
+
+
+
 \---
 
 

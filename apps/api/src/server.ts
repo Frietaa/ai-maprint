@@ -10,8 +10,8 @@ if (existsSync(envFile)) {
   process.loadEnvFile(envFile)
 }
 
-const { port } = loadConfig()
+const { port, allowedOrigins } = loadConfig()
 
-createApp().listen(port, () => {
+createApp({ allowedOrigins }).listen(port, () => {
   console.log(`API listening on port ${port}`)
 })

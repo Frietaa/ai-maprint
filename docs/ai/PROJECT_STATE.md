@@ -38,6 +38,12 @@ Phase 01 (Application \& Data Foundation): ACCEPTED and COMPLETE
 
 (human-approved 2026-10-20).
 
+Phase 02 (Public Read Experience): ACCEPTED and COMPLETE
+
+(human-approved 2026-10-20; verification PASS in TASK-02.10). Plan in
+
+docs/ai/PHASE\_02.md, tasks TASK\_02.01..02.10.
+
 TASK-01.01 added the Prisma 7 + PostgreSQL tooling foundation
 
 and a Docker-based local development PostgreSQL 17
@@ -2130,17 +2136,505 @@ Phase 01 final verification (TASK-01.10, 2026-10-20): PASS
 
 
 
+Phase 02 — Public Read Experience (autonomous run, 2026-10-20)
+
+Plan: docs/ai/PHASE\_02.md; tasks docs/ai/TASK\_02.01.md .. TASK\_02.10.md.
+
+
+
+TASK-02.01 Frontend App Shell, Routing \& Tailwind: COMPLETED
+
+\- Dependencies (apps/web): react-router 8.4.0 (dependency; 8.5.0 was
+
+1 day old), tailwindcss 4.3.3 + @tailwindcss/vite 4.3.3 (dev; peer vite
+
+^5..^8). CSS-first Tailwind v4 config (@import 'tailwindcss' + @theme
+
+brand tokens in src/index.css); no tailwind.config.js / PostCSS.
+
+\- Structure: src/app (App, routes), src/components/layout (PublicLayout,
+
+Header, Footer, Logo), src/components/ui (PageHeader), src/config (brand,
+
+navigation), src/pages (Home, Printing, Atk, LaptopService,
+
+SoftwareInstallation, Locations, NotFound), src/test (setup,
+
+render-route). Old src/App.tsx + App.test.tsx removed.
+
+\- Router: createBrowserRouter + RouterProvider (react-router/dom), one
+
+PublicLayout route, ScrollRestoration, catch-all NotFound. No
+
+/login /signup /account /track-order /admin routes.
+
+\- Shell a11y: skip link, header/nav/main/footer landmarks, NavLink
+
+aria-current, mobile menu button with aria-expanded/aria-controls,
+
+Escape closes and restores focus, closes on navigation, focus-visible
+
+outline, prefers-reduced-motion CSS.
+
+\- Tests: src/app/routes.test.tsx (13). E2E smoke updated (shell +
+
+navigation).
+
+
+
+TASK-02.02 Public API Contract Foundation: COMPLETED
+
+\- packages/shared: public-api.ts (API\_PREFIX, PUBLIC\_API\_PATHS,
+
+PRICE\_TYPES, PRODUCT\_AVAILABILITIES, envelopes ApiItemResponse /
+
+ApiListResponse {data, meta:{count}} / ApiErrorResponse {message,
+
+errors?}, PublicSettingsDto, LocationDto, CategoryDto, ServiceDto,
+
+ProductDto, query types) and opening-hours.ts (WEEKDAYS, OpeningHours,
+
+dependency-free parseOpeningHours: [] = closed day, null = unknown day,
+
+invalid ranges dropped, malformed value -> null). No Prisma/Express/
+
+React/Node imports. apps/api and apps/web now declare
+
+"@maba-printing/shared": "\*" explicitly.
+
+\- apps/api: zod 4.6.5 (dependency). errors/app-error.ts (AppError,
+
+ValidationError 400, NotFoundError 404); middleware/error-handler.ts
+
+(JSON 404 for unknown routes, generic 500 without internals, error
+
+logged server-side); middleware/cors.ts (allowlist from FRONTEND\_URL,
+
+comma-separated, normalized to origins; never "\*", no credentials,
+
+GET/OPTIONS only); X-Content-Type-Options: nosniff; validators/query.ts
+
+(parseQuery with strict Zod schemas -> {field: [messages]}, unknown keys
+
+= "Unknown query parameter") and public-query.validator.ts;
+
+mappers/public-dto.mapper.ts (allow-listed fields; social links only
+
+http(s) URLs; QRIS ref never mapped); http/response.ts; createApp({
+
+getDb, allowedOrigins }) with lazy default getPrisma.
+
+\- Repositories extended (not bypassed): services select category
+
+description + available active-location ids, listServices locationId
+
+filter; products select category description, listProducts
+
+availability filter. DB test bound updated 3 -> 4 statements (one per
+
+relation level); equality (no N+1) assertion unchanged.
+
+\- Settings semantics: GET /public/settings returns {data: null} when no
+
+row exists (no fabricated values, no env fallback).
+
+
+
+TASK-02.03 Public Settings Vertical Slice: COMPLETED
+
+\- GET /api/v1/public/settings: routes/public.routes.ts (createPublicRouter
+
+mounted at API\_PREFIX) -> controllers/public-settings.controller.ts
+
+(parseQuery(noQuerySchema) = validator step) ->
+
+services/public-settings.service.ts -> findBusinessSettings repository.
+
+200 {data: PublicSettingsDto} or {data: null} when not configured;
+
+unknown query -> 400. Verified live against the dev DB (read-only).
+
+\- Frontend: @tanstack/react-query 5.104.1 (5.104.5 was 1 day old).
+
+app/query-client.ts (staleTime 5 min, retry once only for network/5xx,
+
+no refetch on focus); lib/api-client.ts (native fetch, buildApiUrl =
+
+VITE\_API\_BASE\_URL + /api/v1 + path, ApiError kinds network / http /
+
+invalid-response with status and fieldErrors); src/env.d.ts typed
+
+VITE\_API\_BASE\_URL; lib/image-ref.ts (only https URLs or root-relative
+
+paths are rendered, else placeholder); features/settings
+
+(usePublicSettings, useBusinessIdentity with static fallback name).
+
+Header/logo use the DB business name; footer shows WhatsApp number as
+
+text and http(s) social links (no deep link: WhatsApp phase).
+
+\- Vite dev/preview proxy /api -> http://localhost:3000 (same origin, no
+
+CORS needed for npm run dev).
+
+\- Tests: shared DB helper src/test/test-db.ts (guarded client, rollback,
+
+fixtures incl. QRIS ref, javascript: social link, malformed opening
+
+hours, inactive-location link); routes/public-api.db.test.ts;
+
+routes/public-api.test.ts (DB failure -> generic 500, health
+
+independent); web: api-client, image-ref, settings-shell tests; test
+
+helpers src/test/api-mock.ts (fetch mock) + render-route with
+
+QueryClient. test:db runs files serially (--no-file-parallelism);
+
+src/test excluded from the API build.
+
+
+
+TASK-02.04 Locations Vertical Slice: COMPLETED
+
+\- GET /api/v1/locations: controller public-locations.controller.ts
+
+(noQuerySchema) -> services/public-locations.service.ts ->
+
+listLocations({activeOnly: true}) -> toLocationDto. 200 {data, meta:
+
+{count}}; empty list = 200 with []; any query parameter -> 400.
+
+Opening hours normalized by the shared parser (malformed -> null).
+
+\- Frontend: features/locations (use-locations, LocationCard,
+
+OpeningHours + opening-hours-format: Senin..Minggu labels, "08.00"
+
+notation, split shifts joined, [] = "Tutup", null day = "Tidak ada
+
+informasi", whole value missing/malformed = "Jam buka belum tersedia.",
+
+optional note, WIB hint; re-validates with parseOpeningHours).
+
+components/ui/DataState.tsx (LoadingState skeleton with role=status,
+
+EmptyState, ErrorState role=alert + "Coba lagi" retry) and
+
+lib/error-message.ts (Indonesian copy per ApiError kind; no technical
+
+details shown). /locations page uses them.
+
+\- Tests: locations API DB tests (+3), OpeningHours (6), locations page
+
+states incl. retry (5).
+
+
+
+TASK-02.05 Services Catalog Vertical Slice: COMPLETED
+
+\- GET /api/v1/services?categoryId=\&locationId= (both optional UUIDs;
+
+strict schema): public-services.controller -> public-services.service
+
+-> listServices({activeOnly: true, categoryId, locationId}) ->
+
+toServiceDto. Active service + active category only; locationId keeps
+
+services with an available link to that ACTIVE location (inactive or
+
+unknown location -> empty list, 200). availableLocationIds lists only
+
+available, active locations. Verified by 6 new API DB tests.
+
+\- Frontend: lib/format-price.ts is the only price formatter
+
+(Intl id-ID IDR, 0 decimals): FIXED -> "Rp 1.500";
+
+REQUIRES\_CONFIRMATION -> "Konfirmasi harga" or "Mulai Rp ..." with an
+
+indicative price; unusable numbers -> "Konfirmasi harga".
+
+features/services: use-services (query key includes locationId,
+
+keepPreviousData), service-lines.ts (category name keyword matching per
+
+line, grouping, full-catalog fallback when nothing matches - KI-013),
+
+ServiceCard (price, confirmation hint, "Tersedia di: <location names>"),
+
+ServiceCatalog (labelled location <select> using the API locationId
+
+filter, loading/empty/error-retry), NextStepNotice (informational only,
+
+links to /locations). /printing, /laptop-service,
+
+/software-installation pages (software page states the legal-software
+
+policy). No forms, ordering or WhatsApp deep links.
+
+\- Tests: format-price (7), service-lines (11), service pages (5).
+
+
+
+TASK-02.06 Products / ATK Catalog Vertical Slice: COMPLETED
+
+\- GET /api/v1/products?categoryId=\&availability= (UUID / AVAILABLE |
+
+UNAVAILABLE; strict): public-products.controller ->
+
+public-products.service -> listProducts({activeOnly: true, ...}) ->
+
+toProductDto. Active product + active category; UNAVAILABLE stays
+
+listed; inactive never public. 5 new API DB tests.
+
+\- Frontend: features/products (use-products: one unfiltered request,
+
+categories filtered client-side so the filter list stays complete;
+
+API filters remain available and tested; ProductCatalog with
+
+role=group "Filter kategori" aria-pressed toggle buttons, grouped by
+
+category, loading/empty/error-retry; ProductCard with central price
+
+formatter, availability badge text "Tersedia" / "Stok sedang kosong"
+
+plus marker (not color alone), image only via resolveImageRef with
+
+lazy loading and alt = product name, else decorative placeholder).
+
+/atk page with notice explaining unavailable products; no cart,
+
+checkout, quantity or stock numbers.
+
+\- Live check (dev DB, read-only GETs): all four endpoints and filters
+
+return the seeded baseline; screenshots at 360/768/1280 px show no
+
+horizontal overflow on any public route.
+
+\- Tests: atk page (5).
+
+
+
+TASK-02.07 Homepage Composition \& Navigation: COMPLETED
+
+\- / (pages/HomePage.tsx): hero (eyebrow, h1 = business name from
+
+settings with static fallback, tagline, CTAs to #layanan and
+
+/locations); "Layanan kami" with four business-line link cards
+
+(config/business-lines.ts: static product-line concepts, inline SVG
+
+icons aria-hidden; features/home/BusinessLineCards); "Cara kerjanya"
+
+three-step ordered list; "Lokasi kami" preview of up to three API
+
+locations (features/home/LocationPreview with loading/empty/error);
+
+"Informasi" section only when settings publicInfo/WhatsApp exist;
+
+final CTA band. Responsive grids 1/2/4 columns.
+
+\- Copy rules: Indonesian, no prices/addresses/hours/stock/WhatsApp in
+
+code, no 24/7 / cheapest / guarantee / coverage claims ("harga yang
+
+jelas" softened to "informasi harga yang mudah dilihat").
+
+\- Tests: home-page (6). Desktop/mobile screenshots reviewed.
+
+
+
+TASK-02.08 Public UX States, Accessibility \& SEO: COMPLETED
+
+\- SEO: config/seo.ts (per-route title + description) and
+
+components/layout/PageMeta.tsx (sets document.title "<Title> | <business
+
+name>" and meta description; no SEO framework); index.html static
+
+default title/description + theme-color. NotFound has its own title.
+
+Sitemap, structured data and admin noindex deferred to later phases.
+
+\- Accessibility: focus moves to <main> after client-side navigation
+
+(path comparison, StrictMode-safe); skip link; mobile menu toggle keeps
+
+a stable accessible name "Menu" with aria-expanded (label no longer
+
+switches to "Tutup"); headings verified (one h1, no skipped levels) on
+
+every public route; availability/status always text; token contrast
+
+reviewed (slate-500 on white 4.76:1, amber-900/amber-50, red-800/red-50,
+
+brand-700/brand-50 all AA); targets >= 40px for controls, footer links
+
+>= 24px; prefers-reduced-motion respected (CSS + motion-safe).
+
+\- States: all data-backed screens (shell settings, locations, home
+
+preview, services, products) have loading / success / empty / error
+
+with retry; error copy per ApiError kind (network / 4xx / server or
+
+invalid response) in Indonesian without technical details.
+
+\- Tests: seo-a11y (16), error-message (6); Playwright e2e/responsive.spec
+
+(no horizontal overflow at 360/768/1280 on all public routes, keyboard
+
+mobile menu, 404) - 6 E2E tests pass.
+
+\- tsconfig.node.json lib adds DOM for page.evaluate callbacks.
+
+
+
+TASK-02.09 Public Read Integration \& E2E: COMPLETED
+
+\- Full-stack E2E (apps/web/playwright.config.ts, workers 1): webServer 1
+
+= apps/api `npm run db:test:prepare \&\& npm run e2e:api` (PORT 3199,
+
+FRONTEND\_URL=http://localhost:5179); webServer 2 = Vite on 5179 with
+
+VITE\_API\_BASE\_URL=http://localhost:3199 (real cross-origin path through
+
+the CORS allowlist). apps/api/scripts/e2e-server.ts serves createApp
+
+with a Prisma client built from the guarded TEST\_DATABASE\_URL only
+
+(DATABASE\_URL never read) after applyE2eFixtures; scripts/e2e-fixtures.ts
+
+(IDs e2e00000-, settings id 1 'MABA PRINTING E2E', current\_database()
+
+asserted; removeE2eFixtures deletes only E2E rows; CLI clean).
+
+e2e/global-teardown.ts runs e2e:fixtures:clean; db:test:prepare also
+
+removes E2E leftovers (verified: 7 rows after a killed run -> 0).
+
+\- Specs: public-journey (Home -> Lokasi -> Printing incl. location
+
+filter via API -> ATK, asserting DB names, split shift/closed day/note,
+
+Rupiah prices, "Mulai Rp 5.000", "Stok sedang kosong", inactive rows
+
+absent; service-line pages; CORS allow/deny + 400 contract), responsive
+
+(360/768/1280 no overflow, keyboard mobile menu, 404), smoke.
+
+\- Integration coverage: API DB tests for all four endpoints (settings
+
+3, locations 3, services 6, products 5) + repository tests (13) = 30;
+
+component tests cover shell, loading/success/empty/error/retry, prices,
+
+availability, opening hours.
+
+\- Dev workflow fix (KI-014): apps/api "dev" now
+
+`node --watch --conditions=development --import tsx src/server.ts`
+
+(tsx watch stalled under concurrently once the Prisma client is part
+
+of the server import graph). npm run dev verified (proxy serves data).
+
+\- README + env examples updated (FRONTEND\_URL active, VITE\_API\_BASE\_URL
+
+semantics, full-stack E2E prerequisites).
+
+\- Verified: clean typecheck/build/lint/format; npm test 150 (api 34,
+
+web 104, shared 12); test:db 30; Playwright 9; test DB empty after E2E;
+
+dev DB content and migration fingerprint unchanged since Phase 01.
+
+
+
+TASK-02.10 Phase 02 Final Verification: PASS (2026-10-20)
+
+\- Independent re-verification; no fixes made. Phase 01 baseline intact
+
+(HEAD f4b1574; no changes under apps/api/prisma; migration md5s
+
+unchanged); only .env.example files tracked; generated output ignored.
+
+\- Clean build, typecheck, lint, format, Prisma validate/generate,
+
+migrate status dev + test up to date, dev drift none.
+
+\- Live contract check of the built API on the dev DB (read-only, 28
+
+checks): envelopes, exact field allow-lists, no QRIS/isActive/
+
+timestamps, 400 validation incl. activeOnly rejection, JSON 404,
+
+CORS deny, nosniff; public counts equal SQL active rows (2/6/4);
+
+unreachable DB -> generic 500, health 200, no credentials in logs.
+
+\- Layering route -> validator -> controller -> service -> repository ->
+
+Prisma confirmed; no Prisma/Express/React in shared, no Prisma in web;
+
+no any/ts-ignore/TODO; no hardcoded live business values in web.
+
+\- Tests: npm test 150 (api 34, web 104, shared 12); test:db 30;
+
+Playwright 9 (journey, CORS/contract, responsive 360/768/1280,
+
+keyboard menu, 404, smoke). Test DB empty afterwards; dev DB
+
+fingerprint identical during verification and to end of Phase 01.
+
+\- Findings (all non-blocking): LOW pagination deferred (KI-012); LOW
+
+category name matching (KI-013); LOW rate limiting / full security
+
+headers / structured request-ID logging not yet implemented (Arch §42,
+
+§46; Audit \& Security Hardening phase); LOW Phase-02 work uncommitted
+
+(two staged deletions, rest unstaged). INFO: KI-014 mitigated;
+
+WhatsApp shown as text (deep link deferred); success envelope omits
+
+optional message; titles update after settings load; npm
+
+install-scripts notice for prisma preinstall.
+
+
+
+Phase 02 human acceptance (2026-10-20): APPROVED
+
+\- Phase 02 verification PASS accepted; Phase 02 ACCEPTED / COMPLETE.
+
+\- Findings carried forward unchanged (not fixed at closure): KI-012
+
+pagination LOW / deferred; KI-013 category-name matching LOW /
+
+deferred; KI-014 dev watcher MITIGATED; security hardening (rate
+
+limiting, full security headers, structured request-ID logging) LOW /
+
+deferred to an appropriate hardening phase.
+
+\- Phase-02 work not yet committed (owner action).
+
+
+
 \## Next Action
 
 
 
-Phase 01 accepted (2026-10-20); awaiting Phase 02 planning.
+Phase 02 accepted (2026-10-20); awaiting Phase 03 planning. Do not
 
-Closure housekeeping done: README status updated (F-2), KI-010 set
-
-to MONITORING / NOT\_REPRODUCED (F-3). Open: F-1, the Phase 01 work
-
-is not yet committed to Git (owner action). Do not start Phase 02
-
-without explicit instruction.
+start Phase 03 without explicit instruction.
 

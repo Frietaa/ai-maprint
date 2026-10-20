@@ -2,6 +2,8 @@
 
 export interface ApiConfig {
   port: number
+  // Browser origins allowed to call the API cross-origin (CORS allowlist).
+  allowedOrigins: string[]
 }
 
 type Env = Record<string, string | undefined>
@@ -33,6 +35,32 @@ function parsePort(raw: string | undefined): number {
   return port
 }
 
+// FRONTEND_URL: one or more comma-separated web origins, e.g.
+// "http://localhost:5173". Optional: without it no cross-origin browser
+// access is allowed (same-origin/proxied use still works).
+export function parseAllowedOrigins(raw: string | undefined): string[] {
+  if (raw === undefined) return []
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== '')
+    .map((entry) => {
+      let url: URL
+      try {
+        url = new URL(entry)
+      } catch {
+        throw new Error('Invalid FRONTEND_URL: expected http(s) origin(s)')
+      }
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        throw new Error('Invalid FRONTEND_URL: expected http(s) origin(s)')
+      }
+      return url.origin
+    })
+}
+
 export function loadConfig(env: Env = process.env): ApiConfig {
-  return { port: parsePort(readOptional(env, 'PORT')) }
+  return {
+    port: parsePort(readOptional(env, 'PORT')),
+    allowedOrigins: parseAllowedOrigins(readOptional(env, 'FRONTEND_URL')),
+  }
 }

@@ -1,7 +1,47 @@
-/* Minimal foundation styles only; the design system is a later task. */
-body {
-  margin: 0;
-  padding: 2rem 1rem;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
+@import 'tailwindcss';
+
+/*
+ * MABA PRINTING static visual tokens. Owner-replaceable brand colors live
+ * here (PRD §33: final colors/typography are configurable). Mutable business
+ * data (name, WhatsApp, logo, addresses) comes from the API, never from CSS.
+ */
+@theme {
+  --font-sans:
+    'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+
+  --color-brand-50: var(--color-blue-50);
+  --color-brand-100: var(--color-blue-100);
+  --color-brand-600: var(--color-blue-600);
+  --color-brand-700: var(--color-blue-700);
+  --color-brand-800: var(--color-blue-800);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 font-sans text-slate-800 antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

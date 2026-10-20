@@ -11,7 +11,16 @@ const serviceSelect = {
   priceType: true,
   price: true,
   isActive: true,
-  category: { select: { id: true, name: true, isActive: true } },
+  category: {
+    select: { id: true, name: true, description: true, isActive: true },
+  },
+  // Where the service is currently offered: available links to active
+  // locations only (loaded in the same Prisma call, no per-row queries).
+  locations: {
+    where: { isAvailable: true, location: { isActive: true } },
+    select: { locationId: true },
+    orderBy: { locationId: 'asc' },
+  },
 } satisfies Prisma.ServiceSelect
 
 export type ServiceRecord = Prisma.ServiceGetPayload<{
@@ -34,16 +43,29 @@ export interface ListServicesOptions {
   // true for public reads; false also returns inactive services/categories.
   activeOnly: boolean
   categoryId?: string
+  // Only services available at this location (and the location is active).
+  locationId?: string
 }
 
 export function listServices(
   db: DbClient,
-  { activeOnly, categoryId }: ListServicesOptions,
+  { activeOnly, categoryId, locationId }: ListServicesOptions,
 ): Promise<ServiceRecord[]> {
   return db.service.findMany({
     where: {
       ...(activeOnly ? activeService : {}),
       ...(categoryId ? { categoryId } : {}),
+      ...(locationId
+        ? {
+            locations: {
+              some: {
+                locationId,
+                isAvailable: true,
+                location: { isActive: true },
+              },
+            },
+          }
+        : {}),
     },
     select: serviceSelect,
     orderBy: serviceOrder,

@@ -1567,3 +1567,255 @@ Production code changed:
 
 
 None.
+
+
+
+\---
+
+
+
+\## TASK-02.01 — Frontend App Shell, Routing \& Tailwind
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- react-router 8.4.0, tailwindcss + @tailwindcss/vite 4.3.3 (web)
+\- Public shell (header, accessible mobile nav, footer, logo), routes for
+  the six public pages and NotFound
+\- Routing/navigation tests; E2E smoke updated
+
+Verification:
+typecheck, build, lint, format, npm test (19), E2E 1/1 PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.02 — Public API Contract Foundation
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- packages/shared public DTO contracts + opening-hours normalizer
+\- apps/api: zod 4.6.5; errors, error handler, JSON 404, CORS allowlist
+  (FRONTEND\_URL), query validation, DTO mappers, response helpers,
+  injectable createApp
+\- Repositories extended with category description, availability ids,
+  locationId and availability filters
+\- KNOWN\_ISSUES: KI-012 (pagination deferred)
+
+Verification:
+typecheck, build, lint, format, npm test (57), test:db 11/11 PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.03 — Public Settings Vertical Slice
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- GET /api/v1/public/settings (route, controller, service, repository)
+\- @tanstack/react-query 5.104.1; QueryClient, fetch API client,
+  settings query, shell/footer from database settings
+\- Vite /api dev proxy; shared DB test helper; API/DB/web tests
+
+Verification:
+typecheck, build, lint, format, npm test (80), test:db 16/16, E2E 1/1,
+live API + proxy check PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.04 — Locations Vertical Slice
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- GET /api/v1/locations (active only, normalized opening hours)
+\- /locations page with opening-hours renderer and shared
+  loading/empty/error(retry) state components
+
+Verification:
+typecheck, build, lint, format, npm test, test:db 19/19 PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.05 — Services Catalog Vertical Slice
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- GET /api/v1/services with categoryId / locationId filters
+\- Central price formatter; service catalog with category grouping,
+  location filter, availability by location name
+\- /printing, /laptop-service, /software-installation pages
+\- KNOWN\_ISSUES: KI-013 (category matching by name)
+
+Verification:
+typecheck, build, lint, format, npm test, test:db 25/25 PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.06 — Products / ATK Catalog Vertical Slice
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- GET /api/v1/products with categoryId / availability filters
+\- /atk catalog: category filter, availability badges, safe images with
+  placeholder
+
+Verification:
+typecheck, build, lint, format, npm test (121), test:db 30/30, live
+endpoint + responsive screenshot check PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.07 — Homepage Composition \& Navigation
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- Homepage sections (hero, business lines, steps, location preview,
+  business info, CTA) driven by settings/locations APIs
+
+Verification:
+typecheck, build, lint, format, npm test (127) PASS; screenshots
+reviewed.
+
+
+
+\---
+
+
+
+\## TASK-02.08 — Public UX States, Accessibility \& SEO
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- Per-route titles/descriptions (PageMeta), index.html defaults
+\- Focus management on navigation, stable mobile-menu label, heading
+  structure checks; Indonesian error copy per error kind
+\- Responsive/keyboard/404 Playwright tests
+
+Verification:
+typecheck, build, lint, format, npm test (150), E2E 6/6 PASS.
+
+
+
+\---
+
+
+
+\## TASK-02.09 — Public Read Integration \& E2E
+
+Date: 2026-10-20
+
+Status:
+COMPLETED
+
+Changes:
+\- Full-stack Playwright E2E against maba\_printing\_test (E2E API server,
+  deterministic fixtures, teardown, leftover cleanup in prepare)
+\- Public journey, service-line, CORS/contract, responsive specs
+\- apps/api dev script -> node --watch + tsx loader (KI-014)
+\- README and env examples
+
+Verification:
+clean typecheck/build/lint/format PASS; npm test 150, test:db 30,
+Playwright 9 PASS; dev DB unchanged.
+
+
+
+\---
+
+
+
+\## TASK-02.10 — Phase 02 Final Verification
+
+Date: 2026-10-20
+
+Status:
+VERIFICATION PASS (awaiting human acceptance)
+
+Changes:
+None to code, schema or databases (verification only). Project memory,
+PHASE\_02.md status and README status line updated with the result.
+
+Findings:
+LOW KI-012, KI-013, security middleware/logging deferred, Phase-02 work
+uncommitted; INFO items in the report.
+
+Production code changed:
+
+None.
+
+
+
+\---
+
+
+
+\## PHASE 02 — Human Acceptance \& Closure
+
+Date: 2026-10-20
+
+Status:
+ACCEPTED / COMPLETE (human-approved)
+
+Changes:
+\- PROJECT\_STATE.md / CURRENT\_TASK.md: Phase 02 accepted; awaiting
+  Phase 03 planning
+\- PHASE\_02.md status and README Development Status updated
+\- Findings preserved: KI-012, KI-013 (LOW, deferred), KI-014
+  (mitigated), security hardening (LOW, deferred)
+
+Production code changed:
+
+None.

@@ -2,7 +2,7 @@
 // the same Prisma query (no per-row lookups). Price is integer Rupiah; there
 // is no stock quantity, only availability.
 import type { DbClient } from '../db/prisma.js'
-import type { Prisma } from '../generated/prisma/client.js'
+import type { Prisma, ProductAvailability } from '../generated/prisma/client.js'
 
 const productSelect = {
   id: true,
@@ -12,7 +12,9 @@ const productSelect = {
   imageRef: true,
   availability: true,
   isActive: true,
-  category: { select: { id: true, name: true, isActive: true } },
+  category: {
+    select: { id: true, name: true, description: true, isActive: true },
+  },
 } satisfies Prisma.ProductSelect
 
 export type ProductRecord = Prisma.ProductGetPayload<{
@@ -24,16 +26,18 @@ export interface ListProductsOptions {
   // products are still returned: availability is display state.
   activeOnly: boolean
   categoryId?: string
+  availability?: ProductAvailability
 }
 
 export function listProducts(
   db: DbClient,
-  { activeOnly, categoryId }: ListProductsOptions,
+  { activeOnly, categoryId, availability }: ListProductsOptions,
 ): Promise<ProductRecord[]> {
   return db.product.findMany({
     where: {
       ...(activeOnly ? { isActive: true, category: { isActive: true } } : {}),
       ...(categoryId ? { categoryId } : {}),
+      ...(availability ? { availability } : {}),
     },
     select: productSelect,
     orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }, { id: 'asc' }],

@@ -5,15 +5,17 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 ## Development Status
 
 - **Phase 00 — Repository & Tooling Foundation:** COMPLETE.
-- **Phase 01 — Application & Data Foundation:** COMPLETE / ACCEPTED.
+- **Phase 01 — Application & Data Foundation:** COMPLETE.
+- **Phase 02 — Public Read Experience:** COMPLETE / ACCEPTED.
 
 What exists:
 
-- a minimal React + Vite + TypeScript frontend shell (`apps/web`);
-- a minimal Express + TypeScript API (`apps/api`) with only the `/api/v1/health` endpoint;
-- the PostgreSQL + Prisma persistence foundation: schema, migrations, database constraints and indexes, a synthetic development seed, internal read repositories, and a separate test-database workflow.
+- a public React website (`apps/web`, React Router + Tailwind CSS + TanStack Query): homepage, Printing, ATK, Service Laptop, Instalasi Software and Lokasi pages, responsive and accessible, in Indonesian;
+- a read-only public REST API (`apps/api`, Express + Zod): `GET /api/v1/health`, `/public/settings`, `/locations`, `/services`, `/products`;
+- shared public API contracts (`packages/shared`);
+- the PostgreSQL + Prisma persistence foundation: schema, migrations, constraints and indexes, a synthetic development seed, repositories, and a separate test-database workflow.
 
-No product features are implemented yet: no authentication, no catalog or order endpoints, no ordering, payment, upload or admin features, and no production UI.
+Not implemented yet: authentication and accounts, ordering/requests, file upload, order tracking, payment, WhatsApp deep links, the admin panel and production deployment.
 
 ## Approved Stack
 
@@ -30,10 +32,10 @@ No product features are implemented yet: no authentication, no catalog or order 
 ```text
 maba-printing/
 ├── apps/
-│   ├── web/        # Frontend (React + Vite foundation)
-│   └── api/        # Backend API (Express foundation)
+│   ├── web/        # Public website (React + Vite)
+│   └── api/        # REST API (Express + Prisma)
 ├── packages/
-│   └── shared/     # Shared code (package foundation, empty API)
+│   └── shared/     # Public API contracts shared by web and api
 ├── docs/           # Product & technical specification
 │   └── ai/         # AI project memory & task documents
 ├── .env.example    # Environment inventory (reference only)
@@ -47,8 +49,8 @@ maba-printing/
 
 Each app owns its environment file. Copy the example next to it; `.env` files are git-ignored.
 
-- `apps/api/.env.example` → `apps/api/.env` — server-only values. The API starts without any of them (`PORT` defaults to `3000`); the database commands need `DATABASE_URL` and the database tests need `TEST_DATABASE_URL`.
-- `apps/web/.env.example` → `apps/web/.env` — `VITE_*` values only. These are embedded in the browser bundle and are public: never put secrets there.
+- `apps/api/.env.example` → `apps/api/.env` — server-only values. The API starts without any of them (`PORT` defaults to `3000`); data endpoints and database commands need `DATABASE_URL`, the database tests need `TEST_DATABASE_URL`, and `FRONTEND_URL` lists web origins allowed to call the API cross-origin (CORS allowlist; not needed for `npm run dev`).
+- `apps/web/.env.example` → `apps/web/.env` — `VITE_*` values only. These are embedded in the browser bundle and are public: never put secrets there. `VITE_API_BASE_URL` is the API origin; leave it empty in development, where Vite proxies `/api` to `http://localhost:3000`.
 
 ## Local Databases (development and test only)
 
@@ -76,6 +78,8 @@ The seed (`apps/api/prisma/seed.ts`) adds synthetic local-development data only:
 1. Run the database tests: `npm run test:db`. This first creates `maba_printing_test` if it is missing and applies the committed migrations (`npm run db:test:prepare`).
 2. Rebuild it from scratch if needed: `npm run db:test:rebuild`. This drops and recreates **only** `maba_printing_test`, then applies all migrations from an empty database.
 
+3. Browser E2E: `npm run test:e2e` starts a dedicated API on port 3199 against `maba_printing_test` (deterministic E2E fixtures, removed again afterwards) and the website on port 5179, then runs Playwright. It needs the Docker database and `TEST_DATABASE_URL`; `db:test:prepare` also removes leftovers of an interrupted E2E run.
+
 These commands never use `DATABASE_URL` and never touch `maba_printing_dev`. They refuse to run unless `TEST_DATABASE_URL` points to a loopback host and names `maba_printing_test`, and they check `current_database()` again after connecting. Tests create their own synthetic fixtures inside transactions that are always rolled back, so they do not depend on the development seed.
 
 Data is kept in the named Docker volume `maba-printing_postgres-data`, so it survives stop/start and container recreation.
@@ -101,7 +105,7 @@ Then, from the repository root (no manual build step needed):
 | `npm run format`       | Prettier write                                                                            |
 | `npm run format:check` | Prettier check                                                                            |
 | `npm run test`         | Unit/component/API tests (Vitest); no database needed                                     |
-| `npm run test:e2e`     | Browser smoke test (Playwright, Chromium)                                                 |
+| `npm run test:e2e`     | Full-stack browser tests (Playwright, Chromium) against `maba_printing_test`              |
 | `npm run test:db`      | Database tests against `maba_printing_test` (prepares it first; Docker database required) |
 | `npm run clean`        | Remove generated build output (`dist/`, TypeScript build caches)                          |
 
