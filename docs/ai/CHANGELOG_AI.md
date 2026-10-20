@@ -1819,3 +1819,91 @@ Changes:
 Production code changed:
 
 None.
+
+
+
+\---
+
+
+
+\## PHASE 03 — Authentication \& Identity (TASK-03.01..03.09)
+
+Date: 2026-10-21
+
+Status:
+IMPLEMENTED (autonomous run; TASK-03.10 verification follows)
+
+Changes:
+\- docs/ai/PHASE\_03.md and TASK\_03.01..03.10.md created
+\- Migration 20261020171603\_auth\_sessions (user\_sessions + expire index),
+  UserSession model; applied to dev (no reset), test DB rebuilt
+\- API: express-session + connect-pg-simple sessions, CSRF tokens,
+  credentialed CORS, register / login / google / logout / me / csrf,
+  account profile GET/PATCH (MEMBER), principal middleware (role and
+  active state from DB), Argon2id (@node-rs/argon2), Google ID-token
+  verification (google-auth-library), helmet, auth rate limits,
+  X-Request-ID, 413 handling, safe error logs
+\- Config: SESSION\_SECRET (>= 32, required) and DATABASE\_URL required at
+  startup; TRUST\_PROXY; GOOGLE\_CLIENT\_ID; local dev secret written to
+  the git-ignored apps/api/.env only
+\- Shared: auth paths, CSRF header, roles, limits, auth/profile DTOs
+\- Web: /login, /signup, /account, member guard, safe redirect, header
+  account links, GIS button (when configured), credentialed API client
+  with in-memory CSRF token
+\- Tests: API unit 70, DB 127, web 166, shared 13, Playwright 13
+\- Known issues: KI-008 resolved; KI-015, KI-016, KI-017 added
+
+Production code changed:
+
+Yes (Phase 03 scope only).
+
+
+
+\---
+
+
+
+\## PHASE 03 / TASK-03.10 — Phase 03 Final Verification
+
+Date: 2026-10-21
+
+Status:
+VERIFICATION PASS (awaiting human acceptance)
+
+Changes:
+None to code, schema or databases (verification only; the test
+database was rebuilt from migrations and left empty). Project memory,
+PHASE\_03.md, TASK\_03.10.md result and README status updated.
+
+Findings:
+LOW KI-012, KI-013, KI-015, KI-016, KI-017 (accepted), Phase-03 work
+uncommitted; INFO items in TASK\_03.10.md.
+
+Production code changed:
+
+None.
+
+
+
+\---
+
+
+
+\## PHASE 03 — Human Acceptance \& Closure
+
+Date: 2026-10-21
+
+Status:
+ACCEPTED / COMPLETE (human-approved)
+
+Changes:
+\- PROJECT\_STATE.md / CURRENT\_TASK.md: Phase 03 accepted; awaiting
+  Phase 04 planning
+\- PHASE\_03.md status and README Development Status updated
+\- Findings preserved: KI-012, KI-013 (LOW, deferred), KI-014
+  (mitigated), KI-015, KI-016 (LOW, deployment), KI-017 (accepted
+  conservative Google linking decision)
+
+Production code changed:
+
+None.

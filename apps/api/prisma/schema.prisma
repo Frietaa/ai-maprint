@@ -466,3 +466,25 @@ model BusinessSettings {
 
   @@map("business_settings")
 }
+
+// ---------------------------------------------------------------------------
+// Authentication infrastructure (TASK-03.01)
+// ---------------------------------------------------------------------------
+
+// Server-side browser sessions for express-session + connect-pg-simple.
+// Rows are written by the session library; the table itself is owned by the
+// migration history (the library's createTableIfMissing is never used).
+// `sess` is the library's opaque JSON payload, kept minimal by the API:
+// signed-in user id, sign-in time and the CSRF token — never passwords,
+// Google credentials or profile data. No foreign key to users on purpose:
+// anonymous sessions (CSRF token only) have no user, and stale sessions of
+// missing/inactive users are rejected and destroyed by the API.
+model UserSession {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  // Expiry instant; expired rows never authenticate and are pruned.
+  expire DateTime @db.Timestamptz(6)
+
+  @@index([expire])
+  @@map("user_sessions")
+}

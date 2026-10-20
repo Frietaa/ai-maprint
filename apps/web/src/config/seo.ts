@@ -35,6 +35,18 @@ export const pageMeta = {
     title: 'Lokasi',
     description: 'Alamat dan jam buka lokasi kami.',
   },
+  login: {
+    title: 'Masuk',
+    description: 'Masuk ke akun member Anda.',
+  },
+  signup: {
+    title: 'Daftar',
+    description: 'Buat akun member untuk menyimpan data kontak Anda.',
+  },
+  account: {
+    title: 'Akun',
+    description: 'Profil akun member Anda.',
+  },
   notFound: {
     title: 'Halaman tidak ditemukan',
     description: 'Halaman yang Anda cari tidak tersedia.',

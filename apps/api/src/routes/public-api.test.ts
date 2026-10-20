@@ -3,6 +3,7 @@
 import request from 'supertest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../app.js'
+import { testAuthOptions } from '../test/app-options.js'
 import type { DbClient } from '../db/prisma.js'
 
 afterEach(() => {
@@ -15,18 +16,18 @@ function unreachableDb(): DbClient {
 
 describe('public API without a database', () => {
   it('keeps /health independent of the database', async () => {
-    const response = await request(createApp({ getDb: unreachableDb })).get(
-      '/api/v1/health',
-    )
+    const response = await request(
+      createApp({ getDb: unreachableDb, auth: testAuthOptions() }),
+    ).get('/api/v1/health')
     expect(response.status).toBe(200)
     expect(response.body).toStrictEqual({ status: 'ok' })
   })
 
   it('answers a database failure with a generic 500', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    const response = await request(createApp({ getDb: unreachableDb })).get(
-      '/api/v1/public/settings',
-    )
+    const response = await request(
+      createApp({ getDb: unreachableDb, auth: testAuthOptions() }),
+    ).get('/api/v1/public/settings')
 
     expect(response.status).toBe(500)
     expect(response.body).toStrictEqual({ message: 'Internal server error' })

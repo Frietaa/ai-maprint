@@ -44,6 +44,16 @@ Phase 02 (Public Read Experience): ACCEPTED and COMPLETE
 
 docs/ai/PHASE\_02.md, tasks TASK\_02.01..02.10.
 
+
+
+Phase 03 (Authentication \& Identity): ACCEPTED and COMPLETE
+
+(human-approved 2026-10-21; verification PASS in TASK-03.10). Plan in
+
+docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
+
+Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
+
 TASK-01.01 added the Prisma 7 + PostgreSQL tooling foundation
 
 and a Docker-based local development PostgreSQL 17
@@ -2630,11 +2640,333 @@ deferred to an appropriate hardening phase.
 
 
 
+\## Phase 03 — Authentication \& Identity (ACCEPTED / COMPLETE)
+
+
+
+TASK-03.01 Auth Architecture, Session \& Security Foundation: DONE (2026-10-21)
+
+\- Dependencies (apps/api): express-session 1.19.0, connect-pg-simple
+
+  10.0.0, @types/express-session 1.19.0, @types/connect-pg-simple 7.0.3.
+
+\- Migration 20261020171603\_auth\_sessions (the one allowed Phase-03
+
+  migration): CREATE TABLE user\_sessions (sid varchar PK, sess json,
+
+  expire timestamptz(6)) + user\_sessions\_expire\_idx. Reviewed before
+
+  apply: no DROP/TRUNCATE/DELETE/CASCADE, no users change, LF endings;
+
+  previous 5 migrations byte-identical (sha256). Applied to
+
+  maba\_printing\_dev with migrate dev (no reset); status clean, no
+
+  drift; maba\_printing\_test rebuilt from migrations. Modelled as
+
+  UserSession in schema.prisma; createTableIfMissing off.
+
+\- Session: cookie maba.sid (HttpOnly, SameSite=Lax, Secure when
+
+  NODE\_ENV=production, Path=/, 7-day maxAge, rolling off),
+
+  saveUninitialized false (browsing creates no session), payload only
+
+  userId / authenticatedAt / csrfToken; absolute 7-day lifetime also
+
+  checked server-side.
+
+\- CSRF: synchronizer token in the session, GET /api/v1/auth/csrf,
+
+  header X-CSRF-Token on POST/PUT/PATCH/DELETE, timingSafeEqual; login
+
+  and register not exempt. Rotated with every session regeneration.
+
+\- CORS: allowlist now sends Access-Control-Allow-Credentials: true;
+
+  methods GET/POST/PATCH/OPTIONS; headers Content-Type, X-CSRF-Token.
+
+\- Startup change: the API now requires SESSION\_SECRET (>= 32 chars, no
+
+  fallback) and DATABASE\_URL (session store pool). TRUST\_PROXY = hop
+
+  count. /api/v1/health remains database- and session-independent.
+
+\- Local dev SESSION\_SECRET generated into the git-ignored apps/api/.env.
+
+\- Test harness: src/test/auth-db.ts (real PG store on the test DB,
+
+  commit + deterministic cleanup of \*.test.invalid users and all test
+
+  sessions via guarded removeTestAccounts); db:test:prepare and E2E
+
+  clean also remove them.
+
+
+
+TASK-03.02 Email/Password Registration: DONE (2026-10-21)
+
+\- @node-rs/argon2 2.2.2: Argon2id, library defaults m=19456 KiB, t=2,
+
+  p=1 (OWASP baseline); prebuilt N-API binary, no install script.
+
+\- POST /api/v1/auth/register: strict body (name, email, password,
+
+  optional whatsapp; unknown fields incl. role -> 400), MEMBER only,
+
+  201 + AuthUserDto {name, email, role}; duplicate (any case) 409;
+
+  KI-008 index violation (P2002) also 409; session regenerated.
+
+\- Password policy 8-128 chars, not trimmed, no composition rules.
+
+\- One normalizeEmail helper (trim + lowercase).
+
+
+
+TASK-03.03 Email/Password Login: DONE (2026-10-21)
+
+\- POST /api/v1/auth/login: one 401 "Invalid email or password" for
+
+  unknown email, wrong password, Google-only and inactive accounts;
+
+  dummy Argon2id verification when no hash exists; session + CSRF
+
+  rotated on success.
+
+
+
+TASK-03.04 Current User \& Authentication Middleware: DONE (2026-10-21)
+
+\- resolvePrincipal re-reads role/active state from users each request;
+
+  missing/inactive user or expired lifetime destroys the session.
+
+  requireAuthenticated (401) / requireRole (403).
+
+\- GET /api/v1/auth/me: 200 {data: AuthUserDto} or {data: null}.
+
+
+
+TASK-03.05 Logout \& Session Lifecycle: DONE (2026-10-21)
+
+\- POST /api/v1/auth/logout (CSRF): store row destroyed, cookie cleared
+
+  with identical attributes, 200 {data: null}; old cookie replay is
+
+  unauthenticated. Store pruning every 15 min in the running API.
+
+
+
+TASK-03.06 Google Sign-In: DONE (2026-10-21)
+
+\- google-auth-library 11.1.0 (OAuth2Client.verifyIdToken, audience =
+
+  GOOGLE\_CLIENT\_ID); injectable GoogleIdentityVerifier; 503 when not
+
+  configured. Linking policy: linked googleId signs in (active only);
+
+  unverified email 401; new email -> MEMBER (no password); existing
+
+  email without this Google identity -> 409, never auto-linked
+
+  (pre-account-takeover risk without email verification); ADMIN never
+
+  created or altered. No Google tokens stored; GOOGLE\_CLIENT\_SECRET not
+
+  needed or read.
+
+
+
+TASK-03.07 Member Profile: DONE (2026-10-21)
+
+\- GET/PATCH /api/v1/account/profile, MEMBER only (401/403). ProfileDto
+
+  {name, email, whatsapp, signInMethods}. PATCH: name and/or whatsapp
+
+  (null/"" clears); unknown fields (role, email, isActive, ...) 400;
+
+  empty body 400. Email change out of scope.
+
+\- Verified so far: lint, typecheck clean; API unit 63, DB 123 tests.
+
+
+
+TASK-03.08 Authentication UI \& Protected Member Routes: DONE (2026-10-21)
+
+\- Routes /login, /signup, /account (protected, MEMBER). "Lanjut sebagai
+
+  tamu" is a plain link to / (no request, no session). Header: Masuk /
+
+  Daftar or Akun (desktop + mobile menu), hidden until auth state known.
+
+\- API client (single): credentials "include" on every request; apiSend
+
+  for POST/PATCH with in-memory CSRF token (lazy GET /auth/csrf, reset
+
+  after sign-in/out, one retry on "Invalid CSRF token").
+
+\- State: TanStack Query auth/me + account/profile; thin hooks
+
+  (use-auth.ts, use-profile.ts); no context store; auth mutations use
+
+  gcTime 0. Logout navigates home and clears cached session on unmount
+
+  (avoids a guard bounce to /login).
+
+\- RequireMember guard (loading / error+retry / redirect
+
+  /login?redirect=... / non-member message); safeRedirectPath accepts
+
+  internal paths only (rejects absolute, //, backslash, control chars,
+
+  encoded tricks).
+
+\- Google: direct GIS script (accounts.google.com/gsi/client), rendered
+
+  only when VITE\_GOOGLE\_CLIENT\_ID is set; credential posted to the API.
+
+\- Accessible forms (labels, hints/errors via aria-describedby,
+
+  aria-invalid, focus first invalid field / error alert), Indonesian
+
+  copy, autocomplete email/current-password/new-password/name/tel.
+
+\- Verified: web lint/typecheck/build clean; web tests 166; bundle has
+
+  no server secrets; sessionStorage only from React Router
+
+  ScrollRestoration.
+
+
+
+TASK-03.09 Authentication Security Hardening \& E2E: DONE (2026-10-21)
+
+\- helmet 8.3.0: CSP default-src 'none' (+ base-uri, form-action,
+
+  frame-ancestors 'none'), X-Frame-Options DENY, nosniff, Referrer-Policy
+
+  no-referrer, CORP same-site, HSTS only with secure cookies.
+
+\- express-rate-limit 8.7.1: failed sign-ins (login + Google shared) 20 /
+
+  15 min per IP (successes not counted), registrations 10 / 15 min;
+
+  429 {message: "Too many requests"}; injectable limits; in-process store
+
+  (KI-015).
+
+\- X-Request-ID: server-generated UUID per response (incoming ignored),
+
+  exposed via CORS; unexpected-error logs contain only request ID,
+
+  method, path and error name/code (no error objects, bodies, cookies).
+
+\- JSON bodies on session-backed routes limited to 10 kB -> 413
+
+  {message: "Payload too large"}; malformed JSON -> 400.
+
+\- Playwright (Chromium, real API on maba\_printing\_test, PG sessions):
+
+  sign-up -> account -> edit profile -> reload persists -> logout ->
+
+  /account redirects to login; API-created member login (generic
+
+  failure message, then success) and logout; continue as guest (no
+
+  unsafe request, no CSRF fetch, no cookie); CSRF refusal of PATCH
+
+  profile / logout without token; auth pages added to the 360/768/1280
+
+  overflow check. Teardown removes E2E accounts and all test sessions.
+
+  Google Sign-In not E2E-tested (needs a real Google account); covered by
+
+  API integration tests with a fake verifier and component tests.
+
+\- Docs: apps/api/.env.example (SESSION\_SECRET / DATABASE\_URL required,
+
+  GOOGLE\_CLIENT\_ID, GOOGLE\_CLIENT\_SECRET unused, TRUST\_PROXY),
+
+  apps/web/.env.example (VITE\_GOOGLE\_CLIENT\_ID), README status/env.
+
+\- Known issues: KI-008 RESOLVED (application side done); new KI-015
+
+  (rate-limit store), KI-016 (website hosting headers), KI-017 (no
+
+  password/Google account linking; accepted).
+
+\- Verified: lint, typecheck, build clean; npm test 249 (api 70, web
+
+  166, shared 13); test:db 127; Playwright 13; test DB empty afterwards;
+
+  dev API starts with the .env secret and fails fast (no value echoed)
+
+  without/with a too-short SESSION\_SECRET.
+
+
+
+TASK-03.10 Phase 03 Final Verification: PASS (2026-10-21)
+
+\- Independent re-verification; no fixes. Details and findings in
+
+  docs/ai/TASK\_03.10.md.
+
+\- Git baseline 231c263; only Phase-03 paths changed; only .env.example
+
+  tracked; protected docs unchanged. One new migration; 5 previous
+
+  sha256-identical; dev status clean, no drift; test DB rebuilt from
+
+  migrations.
+
+\- format, lint, typecheck, build, prisma validate clean; npm test 249
+
+  (api 70, web 166, shared 13); test:db 127; Playwright 13.
+
+\- Live API on the test DB: 37/37 auth contract checks.
+
+\- Dev DB fingerprint unchanged (migrations 5 -> 6, user\_sessions empty);
+
+  test DB empty afterwards.
+
+\- Findings: LOW KI-012, KI-013, KI-015, KI-016, KI-017 (accepted), Phase
+
+  03 uncommitted; INFO 503 Google attempts count toward the sign-in
+
+  budget, auth state via TanStack Query instead of a context provider,
+
+  one early test fetched Google public certs (removed).
+
+
+
+Phase 03 human acceptance (2026-10-21): APPROVED
+
+\- Phase 03 verification PASS accepted; Phase 03 ACCEPTED / COMPLETE.
+
+\- Findings carried forward unchanged (not fixed at closure): KI-012
+
+  pagination LOW / deferred; KI-013 category-name matching LOW /
+
+  deferred; KI-014 dev watcher MITIGATED; KI-015 in-process rate-limit
+
+  store LOW / deployment; KI-016 website hosting headers LOW /
+
+  deployment; KI-017 no automatic password/Google account linking —
+
+  ACCEPTED conservative security decision; structured logging platform
+
+  future.
+
+\- Phase-03 work not yet committed (owner action).
+
+
+
 \## Next Action
 
 
 
-Phase 02 accepted (2026-10-20); awaiting Phase 03 planning. Do not
+Phase 03 accepted (2026-10-21); awaiting Phase 04 planning. Do not
 
-start Phase 03 without explicit instruction.
+start Phase 04 without explicit instruction.
 

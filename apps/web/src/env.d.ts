@@ -6,6 +6,9 @@ interface ImportMetaEnv {
   // "https://api.example.test". Empty/unset = same origin as the website
   // (local development uses the Vite /api proxy).
   readonly VITE_API_BASE_URL?: string
+  // Google OAuth client ID for Google Identity Services (a public
+  // identifier). Empty/unset hides the Google Sign-In button.
+  readonly VITE_GOOGLE_CLIENT_ID?: string
 }
 
 interface ImportMeta {

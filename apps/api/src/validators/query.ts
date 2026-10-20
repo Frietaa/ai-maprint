@@ -9,12 +9,20 @@ export function parseQuery<S extends z.ZodType>(
 ): z.infer<S> {
   const result = schema.safeParse(query)
   if (!result.success) {
-    throw new ValidationError(toFieldErrors(result.error))
+    throw new ValidationError(
+      toFieldErrors(result.error, 'Unknown query parameter', 'query'),
+    )
   }
   return result.data
 }
 
-function toFieldErrors(error: z.ZodError): FieldErrors {
+// Zod issues → `{ field: [messages] }`. Unknown keys (strict schemas) are
+// reported per key; issues on the whole input use `rootField`.
+export function toFieldErrors(
+  error: z.ZodError,
+  unknownKeyMessage: string,
+  rootField: string,
+): FieldErrors {
   const errors: FieldErrors = {}
   const add = (field: string, message: string) => {
     ;(errors[field] ??= []).push(message)
@@ -22,10 +30,10 @@ function toFieldErrors(error: z.ZodError): FieldErrors {
 
   for (const issue of error.issues) {
     if (issue.code === 'unrecognized_keys') {
-      for (const key of issue.keys) add(key, 'Unknown query parameter')
+      for (const key of issue.keys) add(key, unknownKeyMessage)
       continue
     }
-    const field = issue.path.length > 0 ? issue.path.join('.') : 'query'
+    const field = issue.path.length > 0 ? issue.path.join('.') : rootField
     add(field, issue.message)
   }
   return errors

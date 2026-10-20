@@ -282,15 +282,15 @@ Title: users.email unique index is case-sensitive
 
 Severity: Low
 
-Status: RESOLVED at database level (TASK-01.06, 2026-10-20):
+Status: RESOLVED (database: TASK-01.06, 2026-10-20; application:
 
-unique expression index users\_email\_lower\_key on lower(email)
+TASK-03.02, 2026-10-21). Unique expression index users\_email\_lower\_key on
 
-rejects case-only duplicates (verified with a rolled-back probe).
+lower(email) rejects case-only duplicates; registration, login and Google
 
-Application normalization (trim + lowercase) is still required in
+Sign-In normalize emails with one helper (normalizeEmail: trim +
 
-the authentication task; this index is defense in depth.
+lowercase). A violation of the index maps to 409 (DB test).
 
 Previous status: OPEN (non-blocking)
 
@@ -605,6 +605,116 @@ Recommended Action: apps/api `dev` uses
 (reload on change verified). Recheck `tsx watch` after tsx/Prisma
 
 upgrades; no dependency change made.
+
+
+
+\### KI-015 — Auth Rate Limits Use an In-Process Store
+
+
+
+ID: KI-015
+
+Title: express-rate-limit memory store is per API instance
+
+Severity: Low
+
+Status: OPEN (accepted for the single-instance MVP; deployment phase)
+
+Discovered In: TASK-03.09
+
+Description: Sign-in failure (20 / 15 min) and registration (10 / 15
+
+min) limits per client IP use the library's default in-memory store.
+
+Counters reset on restart and are not shared between instances.
+
+Impact: With several API instances the effective limit multiplies.
+
+Behind a proxy, TRUST\_PROXY must be set or all clients share one IP.
+
+Recommended Action: At deployment, if more than one instance runs, use a
+
+shared store (PostgreSQL/Redis) and set TRUST\_PROXY to the hop count.
+
+
+
+\### KI-016 — Website Hosting Security Headers Not Yet Configured
+
+
+
+ID: KI-016
+
+Title: CSP and other headers for the web app (not the API) are a
+
+deployment concern
+
+Severity: Low
+
+Status: OPEN (deployment phase)
+
+Discovered In: TASK-03.09
+
+Description: The API now sends helmet headers (CSP default-src 'none',
+
+frame-ancestors 'none', X-Frame-Options DENY, nosniff, no-referrer,
+
+CORP same-site, HSTS in production). The SPA itself is served by the
+
+future frontend host, whose headers are not configured yet.
+
+Impact: None locally. In production the website should send a CSP that
+
+allows Google Identity Services (accounts.google.com script/frame) and a
+
+COOP compatible with its popup (same-origin-allow-popups).
+
+Recommended Action: Configure frontend hosting headers when the provider
+
+is chosen (KI-001); keep VITE\_GOOGLE\_CLIENT\_ID origins registered in the
+
+Google Cloud console.
+
+
+
+\### KI-017 — No Account Linking Between Password and Google Sign-In
+
+
+
+ID: KI-017
+
+Title: A Google sign-in for an email that already has an account is
+
+refused (409), not linked
+
+Severity: Low
+
+Status: ACCEPTED LIMITATION (conservative security decision,
+
+TASK-03.06; confirmed with Phase 03 human acceptance 2026-10-21)
+
+Discovered In: TASK-03.06
+
+Description: Without email verification, ownership of a password
+
+account's email is unproven; automatic linking on a verified Google
+
+email would let whoever pre-registered that address keep access
+
+(pre-account-takeover). Public Google Sign-In therefore links only by
+
+existing googleId and never touches ADMIN accounts.
+
+Impact: A member who registered with a password cannot also use Google
+
+for the same email (they see "sudah terdaftar dengan cara masuk lain").
+
+Registration (409) also reveals that an email is registered — inherent
+
+to sign-up and rate-limited.
+
+Recommended Action: Revisit together with email verification or an
+
+authenticated "connect Google" action in a later phase.
 
 
 

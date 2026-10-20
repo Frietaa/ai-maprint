@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 import { primaryNavigation } from '../../config/navigation.ts'
+import { useCurrentUser } from '../../features/auth/use-auth.ts'
 import { Logo } from './Logo.tsx'
 
 interface HeaderProps {
@@ -61,6 +62,10 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
           </ul>
         </nav>
 
+        <div className="hidden lg:block">
+          <AccountLinks layout="inline" />
+        </div>
+
         <button
           ref={toggleRef}
           type="button"
@@ -94,8 +99,60 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
             </li>
           ))}
         </ul>
+        <div className="mx-auto max-w-6xl border-t border-slate-100 px-4 py-3 sm:px-6">
+          <AccountLinks layout="stacked" onNavigate={closeMenu} />
+        </div>
       </nav>
     </header>
+  )
+}
+
+interface AccountLinksProps {
+  layout: 'inline' | 'stacked'
+  onNavigate?: () => void
+}
+
+// Sign-in entry points or the member's account link. Nothing is shown until
+// the session state is known, so links never flicker between states.
+function AccountLinks({ layout, onNavigate }: AccountLinksProps) {
+  const { data: user, isPending } = useCurrentUser()
+  if (isPending) return null
+
+  const stacked = layout === 'stacked'
+  const wrapper = stacked ? 'flex flex-col gap-2' : 'flex items-center gap-2'
+  const block = stacked ? 'flex justify-center py-3' : ''
+
+  if (user) {
+    return (
+      <div className={wrapper}>
+        <NavLink
+          to="/account"
+          onClick={onNavigate}
+          className={(state) => `${navLinkClass(state)} ${block}`}
+        >
+          Akun
+        </NavLink>
+      </div>
+    )
+  }
+
+  return (
+    <div className={wrapper}>
+      <NavLink
+        to="/login"
+        onClick={onNavigate}
+        className={(state) => `${navLinkClass(state)} ${block}`}
+      >
+        Masuk
+      </NavLink>
+      <Link
+        to="/signup"
+        onClick={onNavigate}
+        className={`inline-flex min-h-10 items-center justify-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700 ${block}`}
+      >
+        Daftar
+      </Link>
+    </div>
   )
 }
 

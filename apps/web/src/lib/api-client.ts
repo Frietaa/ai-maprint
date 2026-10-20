@@ -1,7 +1,20 @@
-// Minimal native-fetch client for the MABA PRINTING public API. TanStack
-// Query owns caching/retries; this module only builds URLs, performs the
-// request and turns every failure into one ApiError type.
-import { API_PREFIX, type ApiErrorResponse } from '@maba-printing/shared'
+// Minimal native-fetch client for the MABA PRINTING API — the only one in
+// the web app. TanStack Query owns caching/retries; this module builds URLs,
+// performs requests and turns every failure into one ApiError type.
+//
+// Session handling: every request is sent with `credentials: "include"` so
+// the HttpOnly session cookie travels with it (also cross-origin, where the
+// API's CORS allowlist permits credentials). JavaScript never sees the
+// session ID. Unsafe requests carry the session-bound CSRF token, which is
+// kept in memory only (never in localStorage/sessionStorage).
+import {
+  API_PREFIX,
+  type ApiErrorResponse,
+  type ApiItemResponse,
+  AUTH_API_PATHS,
+  CSRF_HEADER,
+  type CsrfTokenDto,
+} from '@maba-printing/shared'
 
 export type ApiErrorKind = 'network' | 'http' | 'invalid-response'
 
@@ -62,22 +75,16 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-// GET a JSON envelope ({ data, meta? }). Resolves with the parsed body;
-// rejects with ApiError on network failure, non-2xx status or a body that is
-// not a JSON envelope.
-export async function apiGet<T extends { data: unknown }>(
-  path: string,
-  params?: QueryParams,
-  signal?: AbortSignal,
+// Performs the request and returns the parsed JSON envelope ({ data, ... }).
+async function request<T extends { data: unknown }>(
+  url: string,
+  init: RequestInit,
 ): Promise<T> {
   let response: Response
   try {
-    response = await fetch(buildApiUrl(path, params), {
-      headers: { Accept: 'application/json' },
-      signal,
-    })
+    response = await fetch(url, { ...init, credentials: 'include' })
   } catch (error) {
-    if (signal?.aborted) throw error
+    if (init.signal?.aborted) throw error
     throw new ApiError('network', 'Network request failed')
   }
 
@@ -103,4 +110,81 @@ export async function apiGet<T extends { data: unknown }>(
     )
   }
   return body as T
+}
+
+// GET a JSON envelope ({ data, meta? }). Resolves with the parsed body;
+// rejects with ApiError on network failure, non-2xx status or a body that is
+// not a JSON envelope.
+export function apiGet<T extends { data: unknown }>(
+  path: string,
+  params?: QueryParams,
+  signal?: AbortSignal,
+): Promise<T> {
+  return request<T>(buildApiUrl(path, params), {
+    headers: { Accept: 'application/json' },
+    signal,
+  })
+}
+
+// --- CSRF ---------------------------------------------------------------------
+
+let csrfToken: Promise<string> | null = null
+
+// The current session's CSRF token, fetched once and then reused. Fetching
+// it is what creates the (anonymous) server session, so it happens only
+// right before an unsafe request — never merely for browsing.
+function getCsrfToken(): Promise<string> {
+  csrfToken ??= apiGet<ApiItemResponse<CsrfTokenDto>>(AUTH_API_PATHS.csrf)
+    .then((body) => {
+      if (typeof body.data.csrfToken !== 'string') {
+        throw new ApiError('invalid-response', 'Unexpected response format')
+      }
+      return body.data.csrfToken
+    })
+    .catch((error: unknown) => {
+      csrfToken = null
+      throw error
+    })
+  return csrfToken
+}
+
+// Forget the token after the server rotated the session (sign-in,
+// registration, Google sign-in, logout).
+export function resetCsrfToken(): void {
+  csrfToken = null
+}
+
+export function isCsrfRejection(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 403 &&
+    error.message === 'Invalid CSRF token'
+  )
+}
+
+// POST/PATCH a JSON body with the CSRF header. A CSRF rejection (expired or
+// rotated session) refreshes the token and retries exactly once.
+export async function apiSend<T extends { data: unknown }>(
+  method: 'POST' | 'PATCH',
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const send = async () =>
+    request<T>(buildApiUrl(path), {
+      method,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        [CSRF_HEADER]: await getCsrfToken(),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+
+  try {
+    return await send()
+  } catch (error) {
+    if (!isCsrfRejection(error)) throw error
+    resetCsrfToken()
+    return send()
+  }
 }

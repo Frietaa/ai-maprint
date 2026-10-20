@@ -2,6 +2,7 @@ import express from 'express'
 import request from 'supertest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../app.js'
+import { testAuthOptions } from '../test/app-options.js'
 import { ValidationError } from '../errors/app-error.js'
 import { errorHandler, notFoundHandler } from './error-handler.js'
 
@@ -11,7 +12,9 @@ afterEach(() => {
 
 describe('error handling', () => {
   it('answers unknown API routes with a JSON 404', async () => {
-    const response = await request(createApp()).get('/api/v1/does-not-exist')
+    const response = await request(createApp({ auth: testAuthOptions() })).get(
+      '/api/v1/does-not-exist',
+    )
 
     expect(response.status).toBe(404)
     expect(response.headers['content-type']).toMatch(/application\/json/)
@@ -54,7 +57,9 @@ describe('error handling', () => {
   })
 
   it('answers malformed request URLs with 400, not 500', async () => {
-    const response = await request(createApp()).get('/api/v1/%E0%A4%A')
+    const response = await request(createApp({ auth: testAuthOptions() })).get(
+      '/api/v1/%E0%A4%A',
+    )
     expect([400, 404]).toContain(response.status)
     expect(response.status).not.toBe(500)
   })
@@ -62,7 +67,9 @@ describe('error handling', () => {
 
 describe('security headers', () => {
   it('sets nosniff and hides x-powered-by', async () => {
-    const response = await request(createApp()).get('/api/v1/health')
+    const response = await request(createApp({ auth: testAuthOptions() })).get(
+      '/api/v1/health',
+    )
 
     expect(response.headers['x-content-type-options']).toBe('nosniff')
     expect(response.headers['x-powered-by']).toBeUndefined()
@@ -71,15 +78,15 @@ describe('security headers', () => {
 
 describe('CORS allowlist', () => {
   const allowed = 'http://localhost:5173'
-  const app = createApp({ allowedOrigins: [allowed] })
+  const app = createApp({ allowedOrigins: [allowed], auth: testAuthOptions() })
 
-  it('echoes an allowed origin and never uses a wildcard', async () => {
+  it('echoes an allowed origin with credentials, never a wildcard', async () => {
     const response = await request(app)
       .get('/api/v1/health')
       .set('Origin', allowed)
 
     expect(response.headers['access-control-allow-origin']).toBe(allowed)
-    expect(response.headers['access-control-allow-credentials']).toBeUndefined()
+    expect(response.headers['access-control-allow-credentials']).toBe('true')
     expect(response.headers.vary).toMatch(/Origin/)
   })
 
@@ -90,15 +97,23 @@ describe('CORS allowlist', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers['access-control-allow-origin']).toBeUndefined()
+    expect(response.headers['access-control-allow-credentials']).toBeUndefined()
   })
 
-  it('answers preflight only for allowed origins, GET only', async () => {
+  it('answers preflight only for allowed origins, with the CSRF header', async () => {
     const ok = await request(app)
-      .options('/api/v1/locations')
+      .options('/api/v1/auth/login')
       .set('Origin', allowed)
-      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'content-type, x-csrf-token')
     expect(ok.status).toBe(204)
-    expect(ok.headers['access-control-allow-methods']).toBe('GET, OPTIONS')
+    expect(ok.headers['access-control-allow-methods']).toBe(
+      'GET, POST, PATCH, OPTIONS',
+    )
+    expect(ok.headers['access-control-allow-headers']).toBe(
+      'Content-Type, X-CSRF-Token',
+    )
+    expect(ok.headers['access-control-allow-credentials']).toBe('true')
 
     const denied = await request(app)
       .options('/api/v1/locations')

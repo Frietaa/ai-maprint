@@ -3,6 +3,10 @@
 // the E2E suite (IDs prefixed e2e00000-; business_settings id = 1 in the
 // test database) and removed again by removeE2eFixtures().
 //
+// Accounts created by automated tests (API DB tests and E2E) always use a
+// reserved *.test.invalid email domain; removeTestAccounts() deletes them and
+// every session row of the test database.
+//
 // CLI: tsx scripts/e2e-fixtures.ts clean
 import { PrismaPg } from '@prisma/adapter-pg'
 import type { DbClient } from '../src/db/prisma.js'
@@ -54,6 +58,19 @@ export async function removeE2eFixtures(db: DbClient): Promise<void> {
   await db.$executeRaw`DELETE FROM product_categories WHERE id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM locations WHERE id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM business_settings WHERE business_name = 'MABA PRINTING E2E'`
+}
+
+// Reserved, never-deliverable domains (RFC 2606 .invalid) for synthetic
+// accounts: API DB tests and Playwright E2E respectively.
+export const AUTH_TEST_EMAIL_DOMAIN = 'auth.test.invalid'
+export const E2E_EMAIL_DOMAIN = 'e2e.test.invalid'
+
+// Deletes synthetic test accounts and ALL sessions — test database only
+// (asserted). Idempotent.
+export async function removeTestAccounts(db: DbClient): Promise<void> {
+  await assertTestDatabase(db)
+  await db.$executeRaw`DELETE FROM user_sessions`
+  await db.$executeRaw`DELETE FROM users WHERE email LIKE ${'%.test.invalid'}`
 }
 
 const id = e2eId
@@ -198,7 +215,8 @@ export async function applyE2eFixtures(db: PrismaClient): Promise<void> {
   })
 }
 
-// CLI entry: `tsx scripts/e2e-fixtures.ts clean`
+// CLI entry: `tsx scripts/e2e-fixtures.ts clean` (fixtures, test accounts
+// and sessions).
 if (process.argv[1]?.endsWith('e2e-fixtures.ts')) {
   if (process.argv[2] !== 'clean') {
     console.error('Usage: tsx scripts/e2e-fixtures.ts clean')
@@ -207,7 +225,10 @@ if (process.argv[1]?.endsWith('e2e-fixtures.ts')) {
   const db = createTestDbClient()
   try {
     await removeE2eFixtures(db)
-    console.log('E2E fixtures removed from maba_printing_test.')
+    await removeTestAccounts(db)
+    console.log(
+      'E2E fixtures, test accounts and sessions removed from maba_printing_test.',
+    )
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1

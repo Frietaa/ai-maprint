@@ -34,7 +34,7 @@ export interface ApiListResponse<T> {
   meta: ApiListMeta
 }
 
-// `errors` maps a field (here: a query parameter) to its messages.
+// `errors` maps a field (query parameter or body field) to its messages.
 export interface ApiErrorResponse {
   message: string
   errors?: Record<string, string[]>

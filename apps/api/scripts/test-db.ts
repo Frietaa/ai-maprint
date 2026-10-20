@@ -12,7 +12,11 @@
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import pg from 'pg'
-import { createTestDbClient, removeE2eFixtures } from './e2e-fixtures.js'
+import {
+  createTestDbClient,
+  removeE2eFixtures,
+  removeTestAccounts,
+} from './e2e-fixtures.js'
 import {
   assertCurrentDatabase,
   loadTestDatabaseUrl,
@@ -118,12 +122,14 @@ function migrate(): void {
   }
 }
 
-// Leftover E2E fixtures (e.g. from an interrupted Playwright run) would
-// break the empty-database assumption of the DB tests; remove them.
+// Leftover E2E fixtures, test accounts or sessions (e.g. from an interrupted
+// run) would break the empty-database assumption of the DB tests; remove
+// them.
 async function removeE2eLeftovers(): Promise<void> {
   const db = createTestDbClient()
   try {
     await removeE2eFixtures(db)
+    await removeTestAccounts(db)
   } finally {
     await db.$disconnect()
   }

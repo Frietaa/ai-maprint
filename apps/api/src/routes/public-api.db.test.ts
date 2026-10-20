@@ -12,11 +12,12 @@ import type {
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../app.js'
+import { testAuthOptions } from '../test/app-options.js'
 import type { DbClient } from '../db/prisma.js'
 import { alphaHours, fixtureId as id, inRollback } from '../test/test-db.js'
 
 function api(tx: DbClient) {
-  return request(createApp({ getDb: () => tx }))
+  return request(createApp({ getDb: () => tx, auth: testAuthOptions() }))
 }
 
 describe('GET /api/v1/public/settings', () => {

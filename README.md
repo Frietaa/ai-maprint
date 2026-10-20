@@ -7,15 +7,17 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 - **Phase 00 — Repository & Tooling Foundation:** COMPLETE.
 - **Phase 01 — Application & Data Foundation:** COMPLETE.
 - **Phase 02 — Public Read Experience:** COMPLETE / ACCEPTED.
+- **Phase 03 — Authentication & Identity:** COMPLETE / ACCEPTED.
 
 What exists:
 
 - a public React website (`apps/web`, React Router + Tailwind CSS + TanStack Query): homepage, Printing, ATK, Service Laptop, Instalasi Software and Lokasi pages, responsive and accessible, in Indonesian;
 - a read-only public REST API (`apps/api`, Express + Zod): `GET /api/v1/health`, `/public/settings`, `/locations`, `/services`, `/products`;
+- optional member accounts: email + password sign-up/sign-in (Argon2id), a Google Sign-In foundation (server-verified ID token; shown only when configured), sign-out, the `/login`, `/signup` and `/account` pages with the member profile (name, WhatsApp), and "Lanjut sebagai tamu" for guests — `POST /api/v1/auth/register|login|google|logout`, `GET /auth/me`, `GET /auth/csrf`, `GET|PATCH /account/profile`; server-side sessions in PostgreSQL behind an HttpOnly `SameSite=Lax` cookie, CSRF tokens, credentialed CORS allowlist, auth rate limits, security headers and `X-Request-ID`;
 - shared public API contracts (`packages/shared`);
 - the PostgreSQL + Prisma persistence foundation: schema, migrations, constraints and indexes, a synthetic development seed, repositories, and a separate test-database workflow.
 
-Not implemented yet: authentication and accounts, ordering/requests, file upload, order tracking, payment, WhatsApp deep links, the admin panel and production deployment.
+Not implemented yet: ordering/requests (and member order history), order tracking, file upload, the payment workflow, WhatsApp deep links, the admin dashboard and admin login, password reset, email verification and production deployment.
 
 ## Approved Stack
 
@@ -49,8 +51,8 @@ maba-printing/
 
 Each app owns its environment file. Copy the example next to it; `.env` files are git-ignored.
 
-- `apps/api/.env.example` → `apps/api/.env` — server-only values. The API starts without any of them (`PORT` defaults to `3000`); data endpoints and database commands need `DATABASE_URL`, the database tests need `TEST_DATABASE_URL`, and `FRONTEND_URL` lists web origins allowed to call the API cross-origin (CORS allowlist; not needed for `npm run dev`).
-- `apps/web/.env.example` → `apps/web/.env` — `VITE_*` values only. These are embedded in the browser bundle and are public: never put secrets there. `VITE_API_BASE_URL` is the API origin; leave it empty in development, where Vite proxies `/api` to `http://localhost:3000`.
+- `apps/api/.env.example` → `apps/api/.env` — server-only values. The API needs `SESSION_SECRET` (random, at least 32 characters; the example shows how to generate one) and `DATABASE_URL` to start — it stops with an error naming the missing variable; `PORT` defaults to `3000`. The database tests need `TEST_DATABASE_URL`; `FRONTEND_URL` lists web origins allowed to call the API cross-origin with credentials (not needed for `npm run dev`); `GOOGLE_CLIENT_ID` enables Google Sign-In.
+- `apps/web/.env.example` → `apps/web/.env` — `VITE_*` values only. These are embedded in the browser bundle and are public: never put secrets there. `VITE_API_BASE_URL` is the API origin; leave it empty in development, where Vite proxies `/api` to `http://localhost:3000`. `VITE_GOOGLE_CLIENT_ID` (same value as the API's `GOOGLE_CLIENT_ID`) shows the Google button; without it only email + password is offered. No real Google credentials are committed; automated tests never call Google.
 
 ## Local Databases (development and test only)
 

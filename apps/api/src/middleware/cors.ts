@@ -1,10 +1,14 @@
+import { CSRF_HEADER } from '@maba-printing/shared'
 import type { RequestHandler } from 'express'
+import { REQUEST_ID_HEADER } from './request-id.js'
 
-// Explicit CORS allowlist for the public read API (Architecture §20, §42).
-// Only listed origins get Access-Control-Allow-Origin (never "*"); no
-// credentials are allowed because Phase-02 endpoints are unauthenticated.
+// Explicit credentialed CORS allowlist (Architecture §20, §42). Only listed
+// origins get Access-Control-Allow-Origin — the exact origin, never "*" and
+// never an unlisted, reflected one — together with
+// Access-Control-Allow-Credentials so the session cookie can be sent.
 // Requests from other origins are served without CORS headers, so browsers
 // block cross-origin reads. Same-origin use (Vite dev proxy) needs no list.
+// State-changing requests are additionally protected by the CSRF token.
 export function corsAllowlist(
   allowedOrigins: readonly string[],
 ): RequestHandler {
@@ -24,9 +28,11 @@ export function corsAllowlist(
     }
 
     res.set('Access-Control-Allow-Origin', origin)
+    res.set('Access-Control-Allow-Credentials', 'true')
+    res.set('Access-Control-Expose-Headers', REQUEST_ID_HEADER)
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
-      res.set('Access-Control-Allow-Headers', 'Content-Type')
+      res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
+      res.set('Access-Control-Allow-Headers', `Content-Type, ${CSRF_HEADER}`)
       res.set('Access-Control-Max-Age', '600')
       res.status(204).end()
       return

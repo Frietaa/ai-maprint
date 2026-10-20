@@ -7,6 +7,10 @@ const routes = [
   '/laptop-service',
   '/software-installation',
   '/locations',
+  '/login',
+  '/signup',
+  // Signed out: redirects to the login page.
+  '/account',
   '/halaman-tidak-ada',
 ]
 

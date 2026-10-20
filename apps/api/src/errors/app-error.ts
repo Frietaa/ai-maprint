@@ -26,3 +26,23 @@ export class NotFoundError extends AppError {
     super(404, message)
   }
 }
+
+// Not signed in, or credentials rejected.
+export class AuthenticationError extends AppError {
+  constructor(message = 'Authentication required') {
+    super(401, message)
+  }
+}
+
+// Signed in (or not) but not allowed, including CSRF failures.
+export class ForbiddenError extends AppError {
+  constructor(message = 'Forbidden') {
+    super(403, message)
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(409, message)
+  }
+}
