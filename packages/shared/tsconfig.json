@@ -1,0 +1,14 @@
+{
+  // Typecheck/editor/lint project: source and tests. Emit lives in
+  // tsconfig.build.json so tests never reach dist/.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    // Environment-neutral: no Node or DOM types, so code stays usable by web and api.
+    "types": [],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

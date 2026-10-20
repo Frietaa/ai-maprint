@@ -1,0 +1,12 @@
+{
+  // Emitting production build (references are not inherited via extends).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+  },
+  "exclude": ["src/**/*.test.ts"],
+  "references": [{ "path": "../../packages/shared/tsconfig.build.json" }]
+}

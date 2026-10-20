@@ -1,0 +1,12 @@
+# Generated output
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# npm-managed
+package-lock.json
+
+# Approved specification and AI project-memory documents are not reformatted.
+docs/

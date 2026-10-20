@@ -1,0 +1,16 @@
+{
+  // Repository-wide compiler policy. Environment-specific settings
+  // (lib, module, moduleResolution, types, output) stay in each workspace.
+  "compilerOptions": {
+    "target": "es2023",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "erasableSyntaxOnly": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "maba-printing",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MABA PRINTING — integrated printing, ATK, laptop service, and software installation web application.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @maba-printing/shared && npm run build -w @maba-printing/api && npm run build -w @maba-printing/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev": "concurrently --kill-others --names web,api --prefix-colors cyan,magenta \"npm run dev -w @maba-printing/web\" \"npm run dev -w @maba-printing/api\"",
+    "dev:web": "npm run dev -w @maba-printing/web",
+    "dev:api": "npm run dev -w @maba-printing/api",
+    "start:api": "npm run start -w @maba-printing/api",
+    "test:e2e": "npm run test:e2e -w @maba-printing/web",
+    "clean": "node -e \"for (const d of ['packages/shared/dist','apps/api/dist','apps/web/dist','apps/api/node_modules/.tmp','apps/web/node_modules/.tmp','apps/web/test-results','apps/web/playwright-report','coverage','apps/web/coverage','apps/api/coverage','packages/shared/coverage']) require('node:fs').rmSync(d, { recursive: true, force: true })\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript-eslint": "^8.72.0"
+  }
+}

@@ -1,0 +1,7 @@
+/* Minimal foundation styles only; the design system is a later task. */
+body {
+  margin: 0;
+  padding: 2rem 1rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
