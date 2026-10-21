@@ -1,7 +1,7 @@
 import { PageMeta } from '../components/layout/PageMeta.tsx'
 import { pageMeta } from '../config/seo.ts'
 import { PageHeader } from '../components/ui/PageHeader.tsx'
-import { NextStepNotice } from '../features/services/NextStepNotice.tsx'
+import { LaptopServiceOrderForm } from '../features/orders/LaptopServiceOrderForm.tsx'
 import { ServiceCatalog } from '../features/services/ServiceCatalog.tsx'
 
 export function LaptopServicePage() {
@@ -18,10 +18,7 @@ export function LaptopServicePage() {
           line="laptop-service"
           label="Daftar layanan service laptop"
         />
-        <NextStepNotice>
-          Datang ke lokasi kami atau hubungi kontak di bagian bawah halaman
-          untuk menjelaskan keluhan laptop dan mengatur antar atau jemput.
-        </NextStepNotice>
+        <LaptopServiceOrderForm />
       </div>
     </>
   )

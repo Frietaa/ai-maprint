@@ -67,8 +67,9 @@ describe('other auth configuration', () => {
     expect(loadConfig({ ...baseEnv, NODE_ENV: 'development' }).production).toBe(
       false,
     )
-    expect(loadConfig({ ...baseEnv, NODE_ENV: 'production' }).production).toBe(
-      true,
+    // Production needs object storage, which is chosen at deployment.
+    expect(() => loadConfig({ ...baseEnv, NODE_ENV: 'production' })).toThrow(
+      /development only/,
     )
   })
 
@@ -85,5 +86,37 @@ describe('other auth configuration', () => {
       loadConfig({ ...baseEnv, GOOGLE_CLIENT_ID: 'id.apps.example' })
         .googleClientId,
     ).toBe('id.apps.example')
+  })
+})
+
+describe('storage and upload configuration', () => {
+  it('accepts only the local provider, outside production', () => {
+    expect(loadConfig(baseEnv).storageProvider).toBe('local')
+    expect(() => loadConfig({ ...baseEnv, STORAGE_PROVIDER: 's3' })).toThrow(
+      /STORAGE_PROVIDER/,
+    )
+  })
+
+  it('reads bounded upload limits', () => {
+    expect(loadConfig(baseEnv).uploadLimits).toStrictEqual({
+      maxFiles: 5,
+      maxFileBytes: 10 * 1024 * 1024,
+      maxTotalBytes: 25 * 1024 * 1024,
+    })
+    expect(
+      loadConfig({
+        ...baseEnv,
+        UPLOAD_MAX_FILES: '3',
+        UPLOAD_MAX_FILE_SIZE: '1048576',
+      }).uploadLimits,
+    ).toMatchObject({ maxFiles: 3, maxFileBytes: 1048576 })
+    for (const env of [
+      { UPLOAD_MAX_FILES: '0' },
+      { UPLOAD_MAX_FILES: '11' },
+      { UPLOAD_MAX_FILE_SIZE: String(26 * 1024 * 1024) },
+      { UPLOAD_MAX_FILE_SIZE: '10MB' },
+    ]) {
+      expect(() => loadConfig({ ...baseEnv, ...env })).toThrow(/UPLOAD_MAX/)
+    }
   })
 })

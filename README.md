@@ -8,16 +8,18 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 - **Phase 01 — Application & Data Foundation:** COMPLETE.
 - **Phase 02 — Public Read Experience:** COMPLETE / ACCEPTED.
 - **Phase 03 — Authentication & Identity:** COMPLETE / ACCEPTED.
+- **Phase 04 — Order Submission, Private Files & Tracking:** COMPLETE / ACCEPTED.
 
 What exists:
 
 - a public React website (`apps/web`, React Router + Tailwind CSS + TanStack Query): homepage, Printing, ATK, Service Laptop, Instalasi Software and Lokasi pages, responsive and accessible, in Indonesian;
 - a read-only public REST API (`apps/api`, Express + Zod): `GET /api/v1/health`, `/public/settings`, `/locations`, `/services`, `/products`;
 - optional member accounts: email + password sign-up/sign-in (Argon2id), a Google Sign-In foundation (server-verified ID token; shown only when configured), sign-out, the `/login`, `/signup` and `/account` pages with the member profile (name, WhatsApp), and "Lanjut sebagai tamu" for guests — `POST /api/v1/auth/register|login|google|logout`, `GET /auth/me`, `GET /auth/csrf`, `GET|PATCH /account/profile`; server-side sessions in PostgreSQL behind an HttpOnly `SameSite=Lax` cookie, CSRF tokens, credentialed CORS allowlist, auth rate limits, security headers and `X-Request-ID`;
+- order requests for all four business lines — Printing (with optional private document upload: PDF, DOCX, PPTX, XLSX, JPG, PNG, validated by content), ATK (available products with quantities and a server-calculated estimate), Laptop Service (drop-off or pickup) and Software Installation (legal software only) — as Guest or Member, with a receipt, a high-entropy Public Order ID and an order-specific WhatsApp deep link (shown when a WhatsApp number is configured): `POST /api/v1/orders`; guest tracking at `/track-order` (`GET /api/v1/orders/track/:publicId`, safe minimum only); member order history at `/account/orders` (`GET /api/v1/account/orders`, `/account/orders/:publicId`). New orders stay "Menunggu Konfirmasi" (SUBMITTED);
 - shared public API contracts (`packages/shared`);
 - the PostgreSQL + Prisma persistence foundation: schema, migrations, constraints and indexes, a synthetic development seed, repositories, and a separate test-database workflow.
 
-Not implemented yet: ordering/requests (and member order history), order tracking, file upload, the payment workflow, WhatsApp deep links, the admin dashboard and admin login, password reset, email verification and production deployment.
+Not implemented yet: admin order processing (status management, final pricing, file download), payment confirmation and the payment workflow, the 30-day completed-order file-retention cleanup, the admin dashboard and admin login, password reset, email verification, production object storage and production deployment.
 
 ## Approved Stack
 
@@ -51,7 +53,7 @@ maba-printing/
 
 Each app owns its environment file. Copy the example next to it; `.env` files are git-ignored.
 
-- `apps/api/.env.example` → `apps/api/.env` — server-only values. The API needs `SESSION_SECRET` (random, at least 32 characters; the example shows how to generate one) and `DATABASE_URL` to start — it stops with an error naming the missing variable; `PORT` defaults to `3000`. The database tests need `TEST_DATABASE_URL`; `FRONTEND_URL` lists web origins allowed to call the API cross-origin with credentials (not needed for `npm run dev`); `GOOGLE_CLIENT_ID` enables Google Sign-In.
+- `apps/api/.env.example` → `apps/api/.env` — server-only values. The API needs `SESSION_SECRET` (random, at least 32 characters; the example shows how to generate one) and `DATABASE_URL` to start — it stops with an error naming the missing variable; `PORT` defaults to `3000`. The database tests need `TEST_DATABASE_URL`; `FRONTEND_URL` lists web origins allowed to call the API cross-origin with credentials (not needed for `npm run dev`); `GOOGLE_CLIENT_ID` enables Google Sign-In. Uploaded order documents are stored privately in `apps/api/.local-storage/` (git-ignored, never served); `UPLOAD_MAX_FILES` / `UPLOAD_MAX_FILE_SIZE` adjust the limits. Local storage is development-only: with `NODE_ENV=production` the API refuses to start until production object storage exists (deployment phase).
 - `apps/web/.env.example` → `apps/web/.env` — `VITE_*` values only. These are embedded in the browser bundle and are public: never put secrets there. `VITE_API_BASE_URL` is the API origin; leave it empty in development, where Vite proxies `/api` to `http://localhost:3000`. `VITE_GOOGLE_CLIENT_ID` (same value as the API's `GOOGLE_CLIENT_ID`) shows the Google button; without it only email + password is offered. No real Google credentials are committed; automated tests never call Google.
 
 ## Local Databases (development and test only)
@@ -80,7 +82,7 @@ The seed (`apps/api/prisma/seed.ts`) adds synthetic local-development data only:
 1. Run the database tests: `npm run test:db`. This first creates `maba_printing_test` if it is missing and applies the committed migrations (`npm run db:test:prepare`).
 2. Rebuild it from scratch if needed: `npm run db:test:rebuild`. This drops and recreates **only** `maba_printing_test`, then applies all migrations from an empty database.
 
-3. Browser E2E: `npm run test:e2e` starts a dedicated API on port 3199 against `maba_printing_test` (deterministic E2E fixtures, removed again afterwards) and the website on port 5179, then runs Playwright. It needs the Docker database and `TEST_DATABASE_URL`; `db:test:prepare` also removes leftovers of an interrupted E2E run.
+3. Browser E2E: `npm run test:e2e` starts a dedicated API on port 3199 against `maba_printing_test` (deterministic E2E fixtures, removed again afterwards) and the website on port 5179, then runs Playwright. Uploaded E2E documents go to a temporary directory outside the project. It needs the Docker database and `TEST_DATABASE_URL`; `db:test:prepare` also removes leftovers of an interrupted E2E run (orders, test accounts, sessions), and the teardown removes the E2E files.
 
 These commands never use `DATABASE_URL` and never touch `maba_printing_dev`. They refuse to run unless `TEST_DATABASE_URL` points to a loopback host and names `maba_printing_test`, and they check `current_database()` again after connecting. Tests create their own synthetic fixtures inside transactions that are always rolled back, so they do not depend on the development seed.
 

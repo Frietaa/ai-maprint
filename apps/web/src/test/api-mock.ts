@@ -17,6 +17,17 @@ export interface RecordedRequest {
   credentials: RequestCredentials | undefined
   // Parsed JSON body, if any.
   body: unknown
+  // multipart (FormData) requests: field name -> values (files by name).
+  form: Record<string, string[]> | null
+}
+
+function formEntries(body: unknown): Record<string, string[]> | null {
+  if (!(body instanceof FormData)) return null
+  const entries: Record<string, string[]> = {}
+  for (const [key, value] of body.entries()) {
+    ;(entries[key] ??= []).push(typeof value === 'string' ? value : value.name)
+  }
+  return entries
 }
 
 export const TEST_CSRF_TOKEN = 'test-csrf-token'
@@ -52,6 +63,7 @@ export function mockApi(routes: MockRoutes = {}) {
         typeof init?.body === 'string'
           ? (JSON.parse(init.body) as unknown)
           : undefined,
+      form: formEntries(init?.body),
     })
 
     const key = `${method} ${url.pathname}`

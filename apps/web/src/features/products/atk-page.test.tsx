@@ -112,7 +112,11 @@ describe('/atk', () => {
   it('handles loading, empty and error states', async () => {
     mockApi({ '/api/v1/products': 'pending' })
     let view = renderRoute('/atk')
-    expect(screen.getByRole('status')).toHaveTextContent('Memuat katalog ATK…')
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((status) => status.textContent?.includes('Memuat katalog ATK…')),
+    ).toBe(true)
     view.unmount()
 
     mockApi({ '/api/v1/products': list([]) })

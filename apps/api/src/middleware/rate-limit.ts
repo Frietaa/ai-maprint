@@ -58,3 +58,33 @@ export function createAuthRateLimiters(
     register: limiter(limits.windowMs, limits.registrations, false),
   }
 }
+
+// Order endpoints have their own budgets (never shared with sign-in).
+export interface OrderRateLimits {
+  windowMs: number
+  // Order submissions per window.
+  submissions: number
+  // Public tracking lookups per window. IDs carry 65 random bits, so this
+  // is defense in depth, not the main protection against guessing.
+  trackingLookups: number
+}
+
+export const DEFAULT_ORDER_RATE_LIMITS: OrderRateLimits = {
+  windowMs: 15 * 60 * 1000,
+  submissions: 10,
+  trackingLookups: 60,
+}
+
+export interface OrderRateLimiters {
+  submit: RequestHandler
+  track: RequestHandler
+}
+
+export function createOrderRateLimiters(
+  limits: OrderRateLimits = DEFAULT_ORDER_RATE_LIMITS,
+): OrderRateLimiters {
+  return {
+    submit: limiter(limits.windowMs, limits.submissions, false),
+    track: limiter(limits.windowMs, limits.trackingLookups, false),
+  }
+}

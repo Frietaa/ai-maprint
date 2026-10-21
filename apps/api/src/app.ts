@@ -1,4 +1,4 @@
-import { API_PREFIX } from '@maba-printing/shared'
+import { API_PREFIX, ORDER_API_PATHS } from '@maba-printing/shared'
 import express, { type RequestHandler } from 'express'
 import type { Store } from 'express-session'
 import { type DbClient, getPrisma } from './db/prisma.js'
@@ -8,14 +8,28 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler.js'
 import {
   type AuthRateLimits,
   createAuthRateLimiters,
+  createOrderRateLimiters,
+  type OrderRateLimits,
 } from './middleware/rate-limit.js'
 import { requestId } from './middleware/request-id.js'
 import { securityHeaders } from './middleware/security-headers.js'
 import { createSessionManager } from './middleware/session.js'
 import { createAccountRouter } from './routes/account.routes.js'
 import { createAuthRouter } from './routes/auth.routes.js'
+import { createOrderRouter } from './routes/order.routes.js'
+import { createOrderTrackingRouter } from './routes/order-tracking.routes.js'
 import { createPublicRouter } from './routes/public.routes.js'
 import type { GoogleIdentityVerifier } from './services/google-identity.js'
+import type { StorageService } from './storage/storage-service.js'
+import { createOrderMultipart } from './uploads/upload.middleware.js'
+import {
+  DEFAULT_UPLOAD_LIMITS,
+  type UploadLimits,
+} from './uploads/upload-policy.js'
+import {
+  generatePublicOrderId,
+  type PublicOrderIdGenerator,
+} from './utils/public-order-id.js'
 
 export interface AuthOptions {
   // SESSION_SECRET. Tests inject a random value; there is no default.
@@ -32,6 +46,19 @@ export interface AuthOptions {
   rateLimits?: AuthRateLimits
 }
 
+export interface OrderOptions {
+  // Private document storage (local adapter in development; tests use an
+  // isolated temporary root).
+  storage: StorageService
+  // Private directory for in-flight multipart uploads (deleted per request).
+  uploadTempDir: string
+  uploadLimits?: UploadLimits
+  rateLimits?: OrderRateLimits
+  // Injectable for tests (collision retry, clock); production defaults.
+  generatePublicId?: PublicOrderIdGenerator
+  now?: () => Date
+}
+
 export interface AppOptions {
   // Database accessor for request handlers. Defaults to the shared Prisma
   // client, created lazily on first use — /api/v1/health never touches it.
@@ -42,6 +69,9 @@ export interface AppOptions {
   // Express "trust proxy" hop count (TRUST_PROXY); false = direct.
   trustProxy?: number | false
   auth: AuthOptions
+  // Order submission. Without it POST /orders answers 503 (tracking and
+  // member history still work).
+  orders?: OrderOptions
 }
 
 // Responses that depend on the session must never be cached.
@@ -56,6 +86,7 @@ export function createApp({
   allowedOrigins = [],
   trustProxy = false,
   auth,
+  orders,
 }: AppOptions) {
   const app = express()
 
@@ -73,8 +104,15 @@ export function createApp({
     res.status(200).json({ status: 'ok' })
   })
 
-  // Public read endpoints: no session lookup, no cookies set.
+  const orderLimiters = createOrderRateLimiters(orders?.rateLimits)
+
+  // Public read endpoints (catalog, order tracking): no session lookup, no
+  // cookies set.
   app.use(API_PREFIX, createPublicRouter(getDb))
+  app.use(
+    API_PREFIX,
+    createOrderTrackingRouter({ getDb, track: orderLimiters.track }),
+  )
 
   // Everything below is session-backed: server session, CSRF check for
   // unsafe methods, bounded JSON bodies, no caching.
@@ -83,12 +121,19 @@ export function createApp({
     store: auth.sessionStore,
     secureCookies: auth.secureCookies,
   })
+  // JSON bodies: 64 kB for order submissions (descriptions up to 5000
+  // characters), 10 kB everywhere else.
+  const orderJson = express.json({ limit: '64kb' })
+  const smallJson = express.json({ limit: '10kb' })
   app.use(
     API_PREFIX,
     noStore,
     sessions.middleware,
     csrfProtection,
-    express.json({ limit: '10kb' }),
+    (req, res, next) => {
+      const parse = req.path === ORDER_API_PATHS.orders ? orderJson : smallJson
+      parse(req, res, next)
+    },
   )
   app.use(
     API_PREFIX,
@@ -100,6 +145,26 @@ export function createApp({
     }),
   )
   app.use(API_PREFIX, createAccountRouter({ getDb, sessions }))
+  const uploadLimits = orders?.uploadLimits ?? DEFAULT_UPLOAD_LIMITS
+  app.use(
+    API_PREFIX,
+    createOrderRouter({
+      getDb,
+      sessions,
+      storage: orders?.storage ?? null,
+      generatePublicId: orders?.generatePublicId ?? generatePublicOrderId,
+      now: orders?.now ?? (() => new Date()),
+      rateLimiters: orderLimiters,
+      multipart: orders
+        ? createOrderMultipart({
+            tempDir: orders.uploadTempDir,
+            limits: uploadLimits,
+          })
+        : (_req, _res, next) => {
+            next()
+          },
+    }),
+  )
 
   app.use(notFoundHandler)
   app.use(errorHandler)

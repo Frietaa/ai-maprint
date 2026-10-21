@@ -1,4 +1,6 @@
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
 import { createApp } from './app.js'
@@ -8,6 +10,7 @@ import {
   DEFAULT_PRUNE_INTERVAL_SECONDS,
 } from './db/session-store.js'
 import { createGoogleVerifier } from './services/google-identity.js'
+import { createLocalStorage } from './storage/local-storage.js'
 
 // Optional local file apps/api/.env (resolved from src/ or dist/).
 // Variables already set in the real environment take precedence.
@@ -30,6 +33,15 @@ sessionPool.on('error', (error) => {
   console.error('Session database pool error:', error.name)
 })
 
+// Private local document storage (development): apps/api/.local-storage/,
+// git-ignored and never served. In-flight uploads go to a private temp dir.
+const storageRoot = fileURLToPath(
+  new URL('../.local-storage/', import.meta.url),
+)
+const uploadTempDir = path.join(tmpdir(), 'maba-printing-uploads')
+mkdirSync(storageRoot, { recursive: true })
+mkdirSync(uploadTempDir, { recursive: true })
+
 createApp({
   allowedOrigins: config.allowedOrigins,
   trustProxy: config.trustProxy,
@@ -42,6 +54,11 @@ createApp({
     googleVerifier: config.googleClientId
       ? createGoogleVerifier(config.googleClientId)
       : null,
+  },
+  orders: {
+    storage: createLocalStorage(storageRoot),
+    uploadTempDir,
+    uploadLimits: config.uploadLimits,
   },
 }).listen(config.port, () => {
   console.log(`API listening on port ${config.port}`)

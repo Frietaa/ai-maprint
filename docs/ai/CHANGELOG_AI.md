@@ -1907,3 +1907,90 @@ Changes:
 Production code changed:
 
 None.
+
+
+
+\---
+
+
+
+\## PHASE 04 — Order Submission, Private Files \& Tracking (TASK-04.01..04.09)
+
+Date: 2026-10-21
+
+Status:
+IMPLEMENTED (autonomous run; TASK-04.10 verification follows)
+
+Changes:
+\- docs/ai/PHASE\_04.md and TASK\_04.01..04.10.md created
+\- No migrations (Phase-01 schema used as is)
+\- Dependencies: multer 2.4.0, @types/multer 2.3.0, file-type 22.1.1
+  (API); react-hook-form 7.89.0 (web)
+\- Shared: order contracts, PRD status labels, Public Order ID parser,
+  limits, paginated envelope
+\- API: POST /orders (JSON or multipart; guest/member; CSRF; rate limit;
+  single transaction with initial history; collision retry), private
+  file validation by content + StorageService local adapter with
+  compensation, GET /orders/track/:publicId, GET /account/orders and
+  /account/orders/:publicId; STORAGE\_PROVIDER / UPLOAD\_\* configuration;
+  .gitignore /apps/api/.local-storage/
+\- Web: order forms on the four service pages, receipt + WhatsApp link,
+  /track-order, /account/orders, /account/orders/:publicId, nav "Lacak
+  Pesanan"; NextStepNotice removed
+\- Tests: API unit 152, DB 193, web 200, shared 14, Playwright 21
+\- Known issues: KI-015 extended; KI-018, KI-019, KI-020 added
+
+Production code changed:
+
+Yes (Phase 04 scope only).
+
+
+
+\---
+
+
+
+\## PHASE 04 / TASK-04.10 — Phase 04 Final Verification
+
+Date: 2026-10-21
+
+Status:
+VERIFICATION PASS (awaiting human acceptance)
+
+Changes:
+None to code, schema, storage or the development database (verification
+only; the test database was rebuilt from migrations and left empty).
+Project memory, PHASE\_04.md, TASK\_04.10.md result recorded; the
+Playwright count in PROJECT\_STATE corrected from 21 to 17.
+
+Findings:
+LOW KI-012, KI-013, KI-015, KI-018, KI-019, KI-020, Phase-04 work
+uncommitted, memory count correction; INFO items in TASK\_04.10.md.
+
+Production code changed:
+
+None.
+
+
+
+\---
+
+
+
+\## PHASE 04 — Human Acceptance \& Closure
+
+Date: 2026-10-21
+
+Status:
+ACCEPTED / COMPLETE (human-approved)
+
+Changes:
+\- PROJECT\_STATE.md / CURRENT\_TASK.md: Phase 04 accepted; awaiting
+  Phase 05 planning
+\- PHASE\_04.md status, TASK\_04.10.md acceptance and README Development
+  Status updated
+\- Findings preserved: KI-015, KI-018, KI-019, KI-020 and older issues
+
+Production code changed:
+
+None.

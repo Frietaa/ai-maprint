@@ -622,9 +622,11 @@ Status: OPEN (accepted for the single-instance MVP; deployment phase)
 
 Discovered In: TASK-03.09
 
-Description: Sign-in failure (20 / 15 min) and registration (10 / 15
+Description: Sign-in failure (20 / 15 min), registration (10 / 15 min),
 
-min) limits per client IP use the library's default in-memory store.
+order submission (10 / 15 min) and order tracking (60 / 15 min; Phase 04)
+
+limits per client IP use the library's default in-memory store.
 
 Counters reset on restart and are not shared between instances.
 
@@ -715,6 +717,100 @@ to sign-up and rate-limited.
 Recommended Action: Revisit together with email verification or an
 
 authenticated "connect Google" action in a later phase.
+
+
+
+\### KI-018 — Order File Retention Job Not Implemented
+
+
+
+ID: KI-018
+
+Title: Files of COMPLETED orders are not yet deleted after 30 days
+
+Severity: Low
+
+Status: OPEN (deferred: needs the Admin order lifecycle)
+
+Discovered In: TASK-04.03
+
+Description: PRD §9 / ADR-013: files become eligible for deletion 30 days
+
+after the order reaches COMPLETED (order\_files.deleted\_at records actual
+
+removal). Phase 04 has no status workflow — every order stays SUBMITTED,
+
+no completedAt is ever set — so a cleanup job would have nothing to do.
+
+StorageService.delete exists; no fake schedule was created.
+
+Impact: None yet (no order can complete).
+
+Recommended Action: Implement an idempotent cleanup job with the Admin
+
+order-status phase (set completedAt on COMPLETED) or deployment hardening.
+
+
+
+\### KI-019 — Production File Storage Not Yet Available
+
+
+
+ID: KI-019
+
+Title: Only the local development storage adapter exists
+
+Severity: Low
+
+Status: OPEN (deployment phase; related to KI-001)
+
+Discovered In: TASK-04.03
+
+Description: StorageService has a local adapter (apps/api/.local-storage/,
+
+git-ignored, never served). STORAGE\_PROVIDER accepts only "local" and the
+
+API refuses to start with it when NODE\_ENV=production. Uploads are
+
+validated by type, size and content signature but not scanned for
+
+malware.
+
+Impact: Production deployment needs an object-storage adapter first.
+
+Recommended Action: Add a private object-storage adapter (and decide on
+
+malware scanning) when the hosting provider is chosen.
+
+
+
+\### KI-020 — No Idempotency Key for Order Submission
+
+
+
+ID: KI-020
+
+Title: A retried submission after a lost response creates a second order
+
+Severity: Low
+
+Status: OPEN (accepted for MVP)
+
+Discovered In: TASK-04.08
+
+Description: The web form blocks double clicks while a request is pending,
+
+but if the network fails after the server committed the order, the
+
+customer may submit again and receive a second Public Order ID.
+
+Impact: Possible duplicate SUBMITTED orders, resolved manually by the
+
+business (WhatsApp / Admin).
+
+Recommended Action: Consider a client-generated idempotency key when the
+
+Admin order workflow exists.
 
 
 

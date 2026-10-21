@@ -18,4 +18,26 @@ describe('@maba-printing/shared entry point', () => {
     expect(shared.AUTH_LIMITS.passwordMinLength).toBe(8)
     expect(shared.AUTH_LIMITS.passwordMaxLength).toBe(128)
   })
+
+  it('exposes the order contract constants', () => {
+    expect(shared.ORDER_TYPES).toEqual([
+      'PRINTING',
+      'ATK',
+      'LAPTOP_SERVICE',
+      'SOFTWARE_INSTALLATION',
+    ])
+    // PRD §14 consumer labels for every status.
+    expect(shared.ORDER_STATUS_LABELS).toStrictEqual({
+      SUBMITTED: 'Menunggu Konfirmasi',
+      CONFIRMED: 'Pesanan Diterima',
+      IN_PROGRESS: 'Sedang Dikerjakan',
+      READY: 'Siap/Selesai',
+      COMPLETED: 'Pesanan Selesai',
+      CANCELLED: 'Dibatalkan',
+    })
+    expect(shared.parsePublicOrderId(' mp-2026-7k92d4qx8m7ra ')).toBe(
+      'MP-2026-7K92D4QX8M7RA',
+    )
+    expect(shared.parsePublicOrderId('MP-2026-%')).toBeNull()
+  })
 })

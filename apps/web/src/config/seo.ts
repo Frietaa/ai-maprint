@@ -47,6 +47,18 @@ export const pageMeta = {
     title: 'Akun',
     description: 'Profil akun member Anda.',
   },
+  trackOrder: {
+    title: 'Lacak Pesanan',
+    description: 'Lacak status pesanan Anda dengan ID pesanan.',
+  },
+  accountOrders: {
+    title: 'Riwayat Pesanan',
+    description: 'Riwayat pesanan akun member Anda.',
+  },
+  accountOrderDetail: {
+    title: 'Detail Pesanan',
+    description: 'Detail pesanan akun member Anda.',
+  },
   notFound: {
     title: 'Halaman tidak ditemukan',
     description: 'Halaman yang Anda cari tidak tersedia.',

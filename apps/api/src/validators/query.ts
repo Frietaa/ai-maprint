@@ -38,3 +38,17 @@ export function toFieldErrors(
   }
   return errors
 }
+
+// Parses route parameters (e.g. :publicId) with a Zod schema.
+export function parseParams<S extends z.ZodType>(
+  schema: S,
+  params: unknown,
+): z.infer<S> {
+  const result = schema.safeParse(params)
+  if (!result.success) {
+    throw new ValidationError(
+      toFieldErrors(result.error, 'Unknown parameter', 'params'),
+    )
+  }
+  return result.data
+}

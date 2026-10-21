@@ -11,4 +11,5 @@ export const primaryNavigation: readonly NavItem[] = [
   { to: '/laptop-service', label: 'Service Laptop' },
   { to: '/software-installation', label: 'Instalasi Software' },
   { to: '/locations', label: 'Lokasi' },
+  { to: '/track-order', label: 'Lacak Pesanan' },
 ]

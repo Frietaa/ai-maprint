@@ -1,7 +1,7 @@
 import { PageMeta } from '../components/layout/PageMeta.tsx'
 import { pageMeta } from '../config/seo.ts'
 import { PageHeader } from '../components/ui/PageHeader.tsx'
-import { NextStepNotice } from '../features/services/NextStepNotice.tsx'
+import { SoftwareOrderForm } from '../features/orders/SoftwareOrderForm.tsx'
 import { ServiceCatalog } from '../features/services/ServiceCatalog.tsx'
 
 export function SoftwareInstallationPage() {
@@ -33,10 +33,7 @@ export function SoftwareInstallationPage() {
           line="software-installation"
           label="Daftar layanan instalasi software"
         />
-        <NextStepNotice>
-          Datang ke lokasi kami atau hubungi kontak di bagian bawah halaman
-          untuk menyebutkan software yang dibutuhkan dan lisensinya.
-        </NextStepNotice>
+        <SoftwareOrderForm />
       </div>
     </>
   )

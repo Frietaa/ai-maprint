@@ -11,6 +11,9 @@ const routes = [
   '/signup',
   // Signed out: redirects to the login page.
   '/account',
+  '/track-order',
+  // Signed out: redirect to the login page.
+  '/account/orders',
   '/halaman-tidak-ada',
 ]
 

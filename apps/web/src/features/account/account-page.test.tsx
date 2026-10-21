@@ -73,8 +73,8 @@ describe('Account page', () => {
       within(section).getByText('Email dan kata sandi'),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Riwayat pesanan akan tersedia/),
-    ).toBeInTheDocument()
+      screen.getByRole('link', { name: 'Lihat riwayat pesanan' }),
+    ).toHaveAttribute('href', '/account/orders')
     expect(document.body.textContent).not.toMatch(
       /(?:^|[^A-Za-z])MEMBER(?:[^A-Za-z]|$)|googleId|[0-9a-f]{8}-[0-9a-f]{4}-/,
     )

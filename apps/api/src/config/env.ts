@@ -1,4 +1,8 @@
 // Server-only configuration. Never import this from apps/web.
+import {
+  parseUploadLimits,
+  type UploadLimits,
+} from '../uploads/upload-policy.js'
 
 export interface ApiConfig {
   port: number
@@ -16,6 +20,10 @@ export interface ApiConfig {
   // Google OAuth client ID used as the ID-token audience; null disables
   // Google Sign-In (email/password keeps working).
   googleClientId: string | null
+  // Private file storage for order documents. Only the local adapter
+  // exists; production object storage is chosen at deployment.
+  storageProvider: 'local'
+  uploadLimits: UploadLimits
 }
 
 type Env = Record<string, string | undefined>
@@ -98,14 +106,40 @@ export function parseTrustProxy(raw: string | undefined): number | false {
   return hops === 0 ? false : hops
 }
 
+// STORAGE_PROVIDER: unset or "local". Local disk storage is for development
+// only and refused when NODE_ENV=production.
+export function parseStorageProvider(
+  raw: string | undefined,
+  production: boolean,
+): 'local' {
+  if (raw !== undefined && raw !== 'local') {
+    throw new Error('Invalid STORAGE_PROVIDER: only "local" is supported')
+  }
+  if (production) {
+    throw new Error(
+      'STORAGE_PROVIDER "local" is for development only; configure private object storage for production',
+    )
+  }
+  return 'local'
+}
+
 export function loadConfig(env: Env = process.env): ApiConfig {
+  const production = readOptional(env, 'NODE_ENV') === 'production'
   return {
     port: parsePort(readOptional(env, 'PORT')),
     allowedOrigins: parseAllowedOrigins(readOptional(env, 'FRONTEND_URL')),
-    production: readOptional(env, 'NODE_ENV') === 'production',
+    production,
     sessionSecret: parseSessionSecret(readOptional(env, 'SESSION_SECRET')),
     databaseUrl: readRequired(env, 'DATABASE_URL'),
     trustProxy: parseTrustProxy(readOptional(env, 'TRUST_PROXY')),
     googleClientId: readOptional(env, 'GOOGLE_CLIENT_ID') ?? null,
+    storageProvider: parseStorageProvider(
+      readOptional(env, 'STORAGE_PROVIDER'),
+      production,
+    ),
+    uploadLimits: parseUploadLimits(
+      readOptional(env, 'UPLOAD_MAX_FILES'),
+      readOptional(env, 'UPLOAD_MAX_FILE_SIZE'),
+    ),
   }
 }

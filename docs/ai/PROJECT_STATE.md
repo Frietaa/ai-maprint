@@ -52,6 +52,14 @@ Phase 03 (Authentication \& Identity): ACCEPTED and COMPLETE
 
 docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
+
+
+Phase 04 (Order Submission, Private Files \& Tracking): ACCEPTED and
+
+COMPLETE (human-approved 2026-10-21; verification PASS in TASK-04.10).
+
+Plan in docs/ai/PHASE\_04.md, tasks TASK\_04.01..04.10.
+
 Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
 TASK-01.01 added the Prisma 7 + PostgreSQL tooling foundation
@@ -2962,11 +2970,299 @@ Phase 03 human acceptance (2026-10-21): APPROVED
 
 
 
+\## Phase 04 — Order Submission, Private Files \& Tracking (ACCEPTED / COMPLETE)
+
+
+
+Baseline: Phase 03 committed (8968244), clean tree, only .env.example
+
+tracked. Dev DB baseline (2026-10-21): users 1 (created by the owner after
+
+Phase 03), locations 2, services 7, products 5, settings 1, orders 0,
+
+order\_files 0, migrations 6; content md5 c36a1131053ceaabaf9ba4d663242e98.
+
+Dependencies: multer 2.4.0, @types/multer 2.3.0, file-type 22.1.1 (API);
+
+react-hook-form 7.89.0 (web). No install scripts needed.
+
+
+
+TASK-04.01 Order Architecture, Contracts \& Persistence Access: DONE
+
+\- Zero migrations (Phase-01 schema sufficient).
+
+\- Shared order-api.ts: types/statuses, PRD §14 status labels, handover
+
+  methods, limits, paths, request/response DTOs, paginated envelope,
+
+  parsePublicOrderId (trim + uppercase + exact pattern).
+
+\- Public Order ID MP-<YYYY Asia/Jakarta>-<13 Crockford base-32> = 65 bits
+
+  from crypto.randomBytes; injectable generator.
+
+\- order.validator (strict discriminated union), order.repository
+
+  (use-case functions, explicit selects), order.service,
+
+  order-query.service, order-dto.mapper, inTransaction helper.
+
+
+
+TASK-04.02 Core Order Submission \& Public Order IDs: DONE
+
+\- POST /api/v1/orders (session section): CSRF (app level) -> submission
+
+  rate limit (10 / 15 min / IP, separate from auth) -> principal ->
+
+  multipart reader -> service. JSON bodies 64 kB on /orders, 10 kB
+
+  elsewhere. 201 receipt {publicId, type, status, createdAt,
+
+  requestedCompletionAt, estimatedTotal}. 503 if orders not configured.
+
+\- MEMBER -> userId + history actor; guest and ADMIN sessions -> null
+
+  (ADMIN orders are not linked). Snapshot never synced with profile.
+
+\- One transaction: order + items + extension + files + history
+
+  (null -> SUBMITTED). Collision retry up to 5 IDs only when the public
+
+  ID really exists. Requested completion: future, <= 1 year, required
+
+  except ATK. Inactive/unknown location 409.
+
+
+
+TASK-04.03 Printing Request \& Private File Upload: DONE
+
+\- Files optional (PRD §8) but printing needs description or a file.
+
+\- multer disk storage to a private temp dir (random names, limits on
+
+  files/size/fields/parts, early Content-Length refusal, temp files
+
+  removed on response close); payload field = same strict JSON.
+
+\- file-validation: extension + declared MIME + file-type detection must
+
+  agree (OOXML via [Content\_Types].xml; zip/docm/html/exe refused) ->
+
+  415; size 413; count/unexpected field 400; names sanitized (basename,
+
+  no control chars, <= 200).
+
+\- StorageService (put/download/delete/exists) + local adapter
+
+  (apps/api/.local-storage/, exact .gitignore rule, keys orders/<32 hex>,
+
+  traversal-proof, exclusive create). STORAGE\_PROVIDER only "local",
+
+  refused in production; UPLOAD\_MAX\_FILES (5, cap 10),
+
+  UPLOAD\_MAX\_FILE\_SIZE (10 MiB, cap 25 MiB), aggregate 25 MiB.
+
+\- Compensation: files stored before the transaction and deleted on any
+
+  later failure; failed deletion logged with keys only.
+
+\- Retention job deferred (no completion workflow yet).
+
+
+
+TASK-04.04 ATK Order Request: DONE
+
+\- 1-20 distinct products, quantity 1-99; product active + active category
+
+  + AVAILABLE else 409 per item; server snapshot of name/description/
+
+  price/subtotal; estimatedTotal bounded to INTEGER; finalTotal null.
+
+
+
+TASK-04.05 Laptop Service Request: DONE
+
+\- DROP\_OFF / PICKUP; pickup address required for PICKUP, refused for
+
+  DROP\_OFF; future handover time; distance/fee never from the client.
+
+
+
+TASK-04.06 Software Installation Request: DONE
+
+\- licenseAcknowledged: true required; canonical SOFTWARE\_LICENSE\_NOTE
+
+  stored by the server.
+
+\- Verified so far: API unit 152, DB 193 (orders-submit 22, files 19,
+
+  types 14, tracking 11 + Phase 01-03 suites); no temp dirs left.
+
+
+
+TASK-04.07 Guest Tracking \& Member Order History: DONE
+
+\- GET /api/v1/orders/track/:publicId in the session-free public section
+
+  with its own rate limit (60 / 15 min / IP): exact ID (normalized),
+
+  malformed 400, unknown 404 "Order not found", DTO = publicId, type,
+
+  status, createdAt, requestedCompletionAt, location name, timeline
+
+  (status + time). No customer data, description, files, prices, ids,
+
+  actors. Cache-Control no-store.
+
+\- GET /api/v1/account/orders (page, pageSize <= 50; meta page, pageSize,
+
+  total, totalPages; newest first) and /account/orders/:publicId (lookup
+
+  by publicId AND userId; foreign/guest orders 404), MEMBER only.
+
+  Member detail: snapshot, description, location, items, laptop/software
+
+  details, totals, file name/MIME/size, timeline; never storage keys,
+
+  admin notes or actors.
+
+
+
+TASK-04.08 Order Forms, Receipt \& WhatsApp Handoff: DONE
+
+\- react-hook-form 7.89.0 (React 19 peer OK); order forms on /printing,
+
+  /atk, /laptop-service, /software-installation (replacing the Phase-02
+
+  NextStepNotice, removed); shared CustomerFields (member prefill from the
+
+  profile, never written back), WIB datetime inputs, accessible controls.
+
+\- Receipt: Public Order ID (copy button), type, PRD status label,
+
+  requested completion (WIB), estimated total, "Lacak pesanan" (ID passed
+
+  in router state, not the URL), WhatsApp link only when
+
+  BusinessSettings.whatsappNumber is set (wa.me digits, message with the
+
+  public ID only, never auto-opened).
+
+\- /track-order (explicit submit), /account/orders (pagination),
+
+  /account/orders/:publicId; nav "Lacak Pesanan"; account page links to
+
+  history.
+
+\- API client: FormData bodies without manual Content-Type; orders error
+
+  copy for 400/403/409/413/415/429/503.
+
+\- Verified: web lint/typecheck/build clean; web tests 200.
+
+
+
+TASK-04.09 Order Security, Validation \& E2E: DONE
+
+\- E2E API: isolated storage <tmp>/maba-printing-e2e-storage and
+
+  <tmp>/maba-printing-e2e-uploads (exact-path guarded), recreated per run;
+
+  `e2e:fixtures:clean` removes all test-DB orders (removeAllOrders,
+
+  asserted), accounts, sessions, E2E fixtures and E2E files.
+
+\- Playwright (Chromium) +4 order journeys: guest printing with a PDF ->
+
+  receipt (WhatsApp link with public ID only) -> track (normalized ID,
+
+  404 for unknown, no customer/file data); member ATK (profile prefill,
+
+  UNAVAILABLE not selectable, estimate) -> history -> detail; guest laptop
+
+  pickup + software (acknowledgement); POST /orders without CSRF 403.
+
+  Responsive check covers /track-order and /account/orders.
+
+\- Docs: apps/api/.env.example (STORAGE\_PROVIDER, UPLOAD\_\* now read),
+
+  README status/environment/E2E notes. Known issues: KI-015 extended
+
+  (order limiters), KI-018 retention job deferred, KI-019 production
+
+  storage / no malware scanning, KI-020 no idempotency key.
+
+\- Dev API smoke: starts with storage root apps/api/.local-storage/
+
+  (created empty, git-ignored); tracking 404; POST /orders w/o CSRF 403.
+
+\- Verified: format, lint, typecheck, build clean; npm test 366 (api 152,
+
+  web 200, shared 14); test:db 193; Playwright 17 (corrected in
+
+  TASK-04.10: earlier recorded as 21); test DB, test and E2E storage
+
+  empty afterwards.
+
+
+
+TASK-04.10 Phase 04 Final Verification: PASS (2026-10-21)
+
+\- Independent re-verification; no product fixes. Evidence and findings in
+
+  docs/ai/TASK\_04.10.md.
+
+\- Git scope clean; zero migrations; 6 migrations identical; dev/test
+
+  status clean, no drift, test DB rebuilt.
+
+\- format, lint, typecheck, build clean; npm test 366; test:db 193;
+
+  Playwright 17; live API 32/32 on the test DB.
+
+\- Dev DB fingerprint identical to the Phase-04 baseline; development
+
+  storage empty; test DB and test/E2E storage empty afterwards.
+
+\- Findings: LOW memory count correction (Playwright 17, not 21); LOW
+
+  KI-012, KI-013, KI-015, KI-018, KI-019, KI-020, Phase-04 uncommitted;
+
+  INFO public ID may appear in 500-error log paths, invalid submissions
+
+  count toward the rate limit, file-less printing requests allowed with a
+
+  description.
+
+
+
+Phase 04 human acceptance (2026-10-21): APPROVED
+
+\- Phase 04 verification PASS accepted; Phase 04 ACCEPTED / COMPLETE.
+
+\- Findings carried forward unchanged (not fixed at closure): KI-012,
+
+  KI-013 LOW / deferred; KI-014 MITIGATED; KI-015 in-process rate limits
+
+  (auth + orders) LOW; KI-016 website hosting headers LOW; KI-017
+
+  accepted Google linking decision; KI-018 30-day file retention cleanup
+
+  deferred; KI-019 production object storage / malware scanning
+
+  deferred; KI-020 no idempotency key for order submission LOW.
+
+\- Phase-04 work not yet committed (owner action).
+
+
+
 \## Next Action
 
 
 
-Phase 03 accepted (2026-10-21); awaiting Phase 04 planning. Do not
+Phase 04 accepted (2026-10-21); awaiting Phase 05 planning. Do not
 
-start Phase 04 without explicit instruction.
+start Phase 05 without explicit instruction.
 

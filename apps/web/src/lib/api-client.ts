@@ -162,22 +162,29 @@ export function isCsrfRejection(error: unknown): boolean {
   )
 }
 
-// POST/PATCH a JSON body with the CSRF header. A CSRF rejection (expired or
-// rotated session) refreshes the token and retries exactly once.
+// POST/PATCH with the CSRF header: a JSON body, or FormData (multipart,
+// e.g. printing documents) whose Content-Type and boundary the browser sets
+// itself. A CSRF rejection (expired or rotated session) refreshes the token
+// and retries exactly once.
 export async function apiSend<T extends { data: unknown }>(
   method: 'POST' | 'PATCH',
   path: string,
   body?: unknown,
 ): Promise<T> {
+  const multipart = body instanceof FormData
   const send = async () =>
     request<T>(buildApiUrl(path), {
       method,
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/json',
+        ...(multipart ? {} : { 'Content-Type': 'application/json' }),
         [CSRF_HEADER]: await getCsrfToken(),
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: multipart
+        ? body
+        : body === undefined
+          ? undefined
+          : JSON.stringify(body),
     })
 
   try {

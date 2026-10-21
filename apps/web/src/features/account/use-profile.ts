@@ -22,9 +22,10 @@ function useOnUnauthenticated() {
   }
 }
 
-export function useProfile() {
+export function useProfile({ enabled = true }: { enabled?: boolean } = {}) {
   const onUnauthenticated = useOnUnauthenticated()
   return useQuery({
+    enabled,
     queryKey: profileQueryKey,
     queryFn: async ({ signal }) => {
       try {

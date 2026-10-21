@@ -9,6 +9,10 @@ build/
 # Generated Prisma Client (recreated by `npm run db:generate` / npm install)
 /apps/api/src/generated/
 
+# Private local document storage of the development API (customer files).
+# Exact path only (KI-005: no generic storage/ or uploads/ patterns).
+/apps/api/.local-storage/
+
 # Test coverage / reports
 coverage/
 playwright-report/

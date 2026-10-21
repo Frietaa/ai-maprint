@@ -51,3 +51,15 @@ export function findProductById(
 ): Promise<ProductRecord | null> {
   return db.product.findUnique({ where: { id }, select: productSelect })
 }
+
+// Products for an ATK order, regardless of state; the order service decides
+// what is orderable (active, active category, AVAILABLE).
+export function findProductsByIds(
+  db: DbClient,
+  ids: readonly string[],
+): Promise<ProductRecord[]> {
+  return db.product.findMany({
+    where: { id: { in: [...ids] } },
+    select: productSelect,
+  })
+}

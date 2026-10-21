@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { PageMeta } from '../components/layout/PageMeta.tsx'
 import { ErrorState } from '../components/ui/DataState.tsx'
 import { FormAlert } from '../components/ui/FormAlert.tsx'
@@ -132,7 +132,7 @@ function AccountContent() {
 
       <section
         aria-labelledby="pesanan-heading"
-        className="rounded-2xl border border-dashed border-slate-300 bg-white p-6"
+        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <h2
           id="pesanan-heading"
@@ -141,8 +141,14 @@ function AccountContent() {
           Riwayat pesanan
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Riwayat pesanan akan tersedia setelah fitur pemesanan aktif.
+          Lihat status dan detail pesanan yang Anda ajukan.
         </p>
+        <Link
+          to="/account/orders"
+          className="mt-4 inline-flex min-h-11 items-center rounded-lg px-5 font-medium text-brand-700 ring-1 ring-brand-600 hover:bg-brand-50"
+        >
+          Lihat riwayat pesanan
+        </Link>
       </section>
 
       <section aria-label="Keluar" className="space-y-3">

@@ -1,5 +1,7 @@
 import type { RouteObject } from 'react-router'
 import { PublicLayout } from '../components/layout/PublicLayout.tsx'
+import { AccountOrderDetailPage } from '../pages/AccountOrderDetailPage.tsx'
+import { AccountOrdersPage } from '../pages/AccountOrdersPage.tsx'
 import { AccountPage } from '../pages/AccountPage.tsx'
 import { AtkPage } from '../pages/AtkPage.tsx'
 import { HomePage } from '../pages/HomePage.tsx'
@@ -10,11 +12,11 @@ import { NotFoundPage } from '../pages/NotFoundPage.tsx'
 import { PrintingPage } from '../pages/PrintingPage.tsx'
 import { SignupPage } from '../pages/SignupPage.tsx'
 import { SoftwareInstallationPage } from '../pages/SoftwareInstallationPage.tsx'
+import { TrackOrderPage } from '../pages/TrackOrderPage.tsx'
 
-// Routes (Architecture §8): public pages, sign-in/sign-up and the member
-// account. "Continue as Guest" is a link, not a route. Account orders,
-// tracking and admin routes belong to later phases and are intentionally
-// absent.
+// Routes (Architecture §8): public pages with order forms, tracking,
+// sign-in/sign-up and the member account with order history. "Continue as
+// Guest" is a link, not a route. Admin routes belong to a later phase.
 export const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
@@ -27,7 +29,10 @@ export const routes: RouteObject[] = [
       { path: 'locations', element: <LocationsPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
+      { path: 'track-order', element: <TrackOrderPage /> },
       { path: 'account', element: <AccountPage /> },
+      { path: 'account/orders', element: <AccountOrdersPage /> },
+      { path: 'account/orders/:publicId', element: <AccountOrderDetailPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

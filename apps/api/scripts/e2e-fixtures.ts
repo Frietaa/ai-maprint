@@ -11,6 +11,7 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import type { DbClient } from '../src/db/prisma.js'
 import { PrismaClient } from '../src/generated/prisma/client.js'
+import { removeE2eStorage } from './e2e-storage.js'
 import { assertCurrentDatabase, loadTestDatabaseUrl } from './test-database.js'
 
 export const e2eId = {
@@ -48,9 +49,25 @@ async function assertTestDatabase(db: DbClient): Promise<void> {
   assertCurrentDatabase(row?.name)
 }
 
+// Deletes EVERY order and its dependent rows — test database only
+// (asserted). Orders in maba_printing_test are created exclusively by
+// automated tests and E2E runs. Must run before catalog/user cleanup
+// because orders reference them (ON DELETE RESTRICT).
+export async function removeAllOrders(db: DbClient): Promise<void> {
+  await assertTestDatabase(db)
+  await db.$executeRaw`DELETE FROM order_status_history`
+  await db.$executeRaw`DELETE FROM order_files`
+  await db.$executeRaw`DELETE FROM order_items`
+  await db.$executeRaw`DELETE FROM laptop_service_requests`
+  await db.$executeRaw`DELETE FROM software_installation_requests`
+  await db.$executeRaw`DELETE FROM payments`
+  await db.$executeRaw`DELETE FROM orders`
+}
+
 // Deletes only E2E-owned rows (children first); idempotent.
 export async function removeE2eFixtures(db: DbClient): Promise<void> {
   await assertTestDatabase(db)
+  await removeAllOrders(db)
   await db.$executeRaw`DELETE FROM location_services WHERE location_id::text LIKE ${PREFIX} OR service_id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM services WHERE id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM service_categories WHERE id::text LIKE ${PREFIX}`
@@ -69,6 +86,7 @@ export const E2E_EMAIL_DOMAIN = 'e2e.test.invalid'
 // (asserted). Idempotent.
 export async function removeTestAccounts(db: DbClient): Promise<void> {
   await assertTestDatabase(db)
+  await removeAllOrders(db)
   await db.$executeRaw`DELETE FROM user_sessions`
   await db.$executeRaw`DELETE FROM users WHERE email LIKE ${'%.test.invalid'}`
 }
@@ -226,8 +244,9 @@ if (process.argv[1]?.endsWith('e2e-fixtures.ts')) {
   try {
     await removeE2eFixtures(db)
     await removeTestAccounts(db)
+    removeE2eStorage()
     console.log(
-      'E2E fixtures, test accounts and sessions removed from maba_printing_test.',
+      'E2E fixtures, orders, test accounts, sessions and E2E files removed (maba_printing_test).',
     )
   } catch (error) {
     console.error(error instanceof Error ? error.message : error)
