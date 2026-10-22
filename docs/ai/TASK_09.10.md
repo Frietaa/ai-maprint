@@ -33,7 +33,7 @@ STOP after the verdict; no repairs.
 
 ## Result (2026-10-22)
 
-Final project verdict: **DEPLOYMENT_READY_PENDING_PROVIDER**
+Final project verdict: **DEPLOYMENT_READY_PENDING_PROVIDER** — human-accepted 2026-10-22 (final project review)
 
 The application and repository are technically ready; hosting, managed
 PostgreSQL, private object storage (and its StorageService adapter),

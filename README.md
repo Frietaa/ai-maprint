@@ -4,22 +4,24 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 
 ## Status
 
-**MVP release candidate — deployment-ready; production provider/account configuration pending.** The application implements the frozen PRD v1.0 MVP. It is not deployed: hosting, managed PostgreSQL, private object storage, scheduler and domain are owner decisions ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) §2). Production refuses to start until a private object-storage adapter exists (KI-019).
+**DEPLOYMENT_READY_PENDING_PROVIDER.** Engineering implementation and the release candidate are complete and human-accepted (Phases 00–09 COMPLETE / ACCEPTED); the application implements the frozen PRD v1.0 MVP. **Production deployment has not occurred:** hosting, managed PostgreSQL, private object storage, scheduler and domain are owner decisions ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) §2). Production refuses to start until a private object-storage adapter exists (KI-019).
 
-| Phase | Scope                                                 | Status                                                                                                                                   |
-| ----- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 00    | Repository & tooling foundation                       | COMPLETE / ACCEPTED                                                                                                                      |
-| 01    | Application & data foundation                         | COMPLETE / ACCEPTED                                                                                                                      |
-| 02    | Public read experience                                | COMPLETE / ACCEPTED                                                                                                                      |
-| 03    | Authentication & identity                             | COMPLETE / ACCEPTED                                                                                                                      |
-| 04    | Order submission, private files & tracking            | COMPLETE / ACCEPTED                                                                                                                      |
-| 05    | Admin operations & order management                   | COMPLETE / ACCEPTED                                                                                                                      |
-| 06    | Remaining MVP experience & customer payment UX        | AUTONOMOUSLY COMPLETED / VERIFIED                                                                                                        |
-| 07    | Security, reliability & production hardening          | AUTONOMOUSLY COMPLETED / VERIFIED                                                                                                        |
-| 08    | Production infrastructure & deployment readiness      | AUTONOMOUSLY COMPLETED / VERIFIED                                                                                                        |
-| 09    | Release candidate, full regression & launch readiness | AUTONOMOUSLY COMPLETED / VERIFIED — final verdict **DEPLOYMENT_READY_PENDING_PROVIDER** ([docs/ai/TASK_09.10.md](docs/ai/TASK_09.10.md)) |
+| Phase | Scope                                                 | Status              |
+| ----- | ----------------------------------------------------- | ------------------- |
+| 00    | Repository & tooling foundation                       | COMPLETE / ACCEPTED |
+| 01    | Application & data foundation                         | COMPLETE / ACCEPTED |
+| 02    | Public read experience                                | COMPLETE / ACCEPTED |
+| 03    | Authentication & identity                             | COMPLETE / ACCEPTED |
+| 04    | Order submission, private files & tracking            | COMPLETE / ACCEPTED |
+| 05    | Admin operations & order management                   | COMPLETE / ACCEPTED |
+| 06    | Remaining MVP experience & customer payment UX        | COMPLETE / ACCEPTED |
+| 07    | Security, reliability & production hardening          | COMPLETE / ACCEPTED |
+| 08    | Production infrastructure & deployment readiness      | COMPLETE / ACCEPTED |
+| 09    | Release candidate, full regression & launch readiness | COMPLETE / ACCEPTED |
 
-Phases 06–09 ran in one human-authorized autonomous session (each independently verified, then checkpoint-committed). They await the owner's review.
+Phases 06–09 ran in one human-authorized autonomous session (each independently verified and checkpoint-committed) and were human-accepted in the final project review (2026-10-22). Final verdict: [docs/ai/TASK_09.10.md](docs/ai/TASK_09.10.md).
+
+Remaining human-owned decisions before go-live: hosting provider, managed PostgreSQL provider, private object-storage provider (then its `StorageService` adapter — KI-019 blocks a production start until it exists), production scheduler for the daily retention cleanup, malware-scanning policy (`clamav` or explicit `none`), domain/DNS, and RPO/RTO targets.
 
 ## What the application does
 
