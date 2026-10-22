@@ -982,7 +982,17 @@ Title: The session cookie only works when website and API are same-site
 
 Severity: Medium (deployment blocker for a cross-site topology)
 
-Status: OPEN (to be addressed in Phase 08 deployment readiness)
+Status: RESOLVED (TASK-08.02, 2026-10-22): SESSION\_COOKIE\_SAMESITE = lax
+
+(default) | strict | none; "none" is accepted only with NODE\_ENV=production
+
+and Secure cookies (the session manager refuses it otherwise); DB-tested
+
+cookie attributes. docs/DEPLOYMENT.md recommends a same-site topology and
+
+explains why cross-site cookies are unreliable.
+
+Previous status: OPEN (to be addressed in Phase 08 deployment readiness)
 
 Discovered In: TASK-07.01 threat-model review
 
@@ -1035,6 +1045,18 @@ storage, and database policies may change.
 
 
 Decision will be made near deployment.
+
+
+
+Update (TASK-08.01, 2026-10-22): decision package ready in
+
+docs/DEPLOYMENT.md section 2 (requirements, options, criteria for domain,
+
+website host, API host, managed PostgreSQL, object storage, scanner,
+
+scheduler, Google). Awaiting the owner's choice; the repository is
+
+deployment-ready pending provider.
 
 
 

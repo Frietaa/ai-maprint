@@ -18,7 +18,10 @@ import { requestId } from './middleware/request-id.js'
 import { requestLog } from './middleware/request-log.js'
 import { errorCategory, logger } from './observability/logger.js'
 import { securityHeaders } from './middleware/security-headers.js'
-import { createSessionManager } from './middleware/session.js'
+import {
+  createSessionManager,
+  type SessionCookieSameSite,
+} from './middleware/session.js'
 import { createAccountRouter } from './routes/account.routes.js'
 import { createAdminRouter } from './routes/admin.routes.js'
 import { createAuthRouter } from './routes/auth.routes.js'
@@ -46,6 +49,8 @@ export interface AuthOptions {
   sessionStore: Store
   // Secure cookies (HTTPS only) — true in production.
   secureCookies: boolean
+  // Session cookie SameSite (SESSION_COOKIE_SAMESITE); default lax.
+  sameSite?: SessionCookieSameSite
   // Google ID-token verifier (from GOOGLE_CLIENT_ID); null/absent disables
   // Google Sign-In. Tests inject a fake verifier.
   googleVerifier?: GoogleIdentityVerifier | null
@@ -191,6 +196,7 @@ export function createApp({
     secret: auth.sessionSecret,
     store: auth.sessionStore,
     secureCookies: auth.secureCookies,
+    sameSite: auth.sameSite,
   })
   // JSON bodies: 64 kB for order submissions (descriptions up to 5000
   // characters), 10 kB everywhere else.

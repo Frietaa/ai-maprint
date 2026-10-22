@@ -34,6 +34,22 @@ describe('session cookie', () => {
     expect(response.headers['cache-control']).toBe('no-store')
   })
 
+  it('uses SameSite=None with Secure only for an explicit cross-site setup (KI-022)', async () => {
+    const app = createTestApp({
+      trustProxy: 1,
+      auth: { secureCookies: true, sameSite: 'none' },
+    })
+    const response = await request(app)
+      .get('/api/v1/auth/csrf')
+      .set('X-Forwarded-Proto', 'https')
+    const cookie = setCookies(response).find((c) => c.startsWith('maba.sid='))
+    expect(cookie).toMatch(/; SameSite=None/)
+    expect(cookie).toMatch(/; Secure/)
+    expect(() =>
+      createTestApp({ auth: { secureCookies: false, sameSite: 'none' } }),
+    ).toThrow('SameSite=None session cookies require Secure cookies')
+  })
+
   it('is Secure when secure cookies are enabled (production)', async () => {
     const app = createTestApp({
       trustProxy: 1,

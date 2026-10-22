@@ -3,6 +3,7 @@
 //
 //   ADMIN_EMAIL=... ADMIN_NAME=... ADMIN_PASSWORD=... npm run admin:create
 //   ... npm run admin:create -- --promote   # promote an existing MEMBER
+//   ... node dist/cli/admin-create.js [--promote]   # built API (production)
 //
 // Credentials come from the environment (e.g. the git-ignored apps/api/.env
 // or the shell); nothing is ever printed except the outcome. There is no
@@ -12,9 +13,9 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import {
   provisionAdmin,
   ProvisioningError,
-} from '../src/admin/admin-provisioning.js'
-import { readRequired } from '../src/config/env.js'
-import { PrismaClient } from '../src/generated/prisma/client.js'
+} from '../admin/admin-provisioning.js'
+import { readRequired } from '../config/env.js'
+import { PrismaClient } from '../generated/prisma/client.js'
 
 if (existsSync('.env')) process.loadEnvFile('.env')
 

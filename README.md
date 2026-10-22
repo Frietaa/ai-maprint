@@ -12,6 +12,7 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 - **Phase 05 — Admin Operations & Order Management:** COMPLETE / ACCEPTED.
 - **Phase 06 — Remaining MVP Experience & Customer Payment UX:** IMPLEMENTED / VERIFIED (autonomous run; see `docs/ai/TASK_06.10.md`).
 - **Phase 07 — Security, Reliability & Production Hardening:** IMPLEMENTED / VERIFIED (autonomous run; see `docs/ai/TASK_07.10.md`).
+- **Phase 08 — Production Infrastructure & Deployment Readiness:** IMPLEMENTED / VERIFIED (autonomous run; see `docs/ai/TASK_08.10.md`). Deployment-ready; production provider/account configuration pending (`docs/DEPLOYMENT.md`).
 
 What exists:
 

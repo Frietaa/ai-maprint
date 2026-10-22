@@ -1,0 +1,14 @@
+# Keep the Docker build context small and free of secrets and private data.
+.git
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+apps/api/.local-storage
+apps/api/src/generated
+apps/web/test-results
+apps/web/playwright-report
+*.dump
+*.log

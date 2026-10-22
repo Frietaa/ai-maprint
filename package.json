@@ -2,7 +2,7 @@
   "name": "maba-printing",
   "version": "0.0.0",
   "private": true,
-  "description": "MABA PRINTING \u00e2\u20ac\u201d integrated printing, ATK, laptop service, and software installation web application.",
+  "description": "MABA PRINTING — integrated printing, ATK, laptop service, and software installation web application.",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -25,6 +25,7 @@
     "db:generate": "npm run db:generate -w @maba-printing/api",
     "db:migrate": "npm run db:migrate -w @maba-printing/api",
     "db:migrate:status": "npm run db:migrate:status -w @maba-printing/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy -w @maba-printing/api",
     "db:seed": "npm run db:seed -w @maba-printing/api",
     "db:studio": "npm run db:studio -w @maba-printing/api",
     "db:test:prepare": "npm run db:test:prepare -w @maba-printing/api",
@@ -32,7 +33,10 @@
     "db:start": "docker compose -f compose.dev.yml up -d --wait postgres",
     "db:stop": "docker compose -f compose.dev.yml stop postgres",
     "db:status": "docker compose -f compose.dev.yml ps postgres",
-    "check:migrations": "node scripts/check-migrations.mjs"
+    "check:migrations": "node scripts/check-migrations.mjs",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:migrations && npm run db:validate && npm test && npm run db:test:rebuild && npm run test:db && npm run build",
+    "verify:e2e": "npm run test:e2e && npm run test:e2e:preview -w @maba-printing/web",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

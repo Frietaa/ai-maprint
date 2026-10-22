@@ -3,6 +3,8 @@ import {
   loadConfig,
   parseAllowedOrigins,
   parseRateLimitStore,
+  parseSessionCookieSameSite,
+  productionWarnings,
   parseUploadScanner,
   parseSessionSecret,
   parseTrustProxy,
@@ -178,5 +180,56 @@ describe('UPLOAD_SCANNER', () => {
     expect(() =>
       parseUploadScanner({ UPLOAD_SCANNER: 'virustotal' }, false),
     ).toThrow('Invalid UPLOAD_SCANNER: expected "clamav" or "none"')
+  })
+})
+
+describe('SESSION_COOKIE_SAMESITE (KI-022)', () => {
+  it('defaults to lax and accepts strict', () => {
+    expect(loadConfig(baseEnv).sessionCookieSameSite).toBe('lax')
+    expect(parseSessionCookieSameSite('strict', false)).toBe('strict')
+  })
+
+  it('allows none only in production (Secure cookies)', () => {
+    expect(parseSessionCookieSameSite('none', true)).toBe('none')
+    expect(() => parseSessionCookieSameSite('none', false)).toThrow(
+      /requires NODE_ENV=production/,
+    )
+    expect(() => parseSessionCookieSameSite('None', true)).toThrow(
+      /Invalid SESSION_COOKIE_SAMESITE/,
+    )
+  })
+})
+
+describe('productionWarnings', () => {
+  const production = {
+    ...loadConfig(baseEnv),
+    production: true,
+  }
+
+  it('names risky but valid production settings without values', () => {
+    const warnings = productionWarnings({
+      ...production,
+      trustProxy: false,
+      allowedOrigins: ['http://www.example.test'],
+      rateLimitStore: 'memory',
+    })
+    expect(warnings.join(' ')).toMatch(/TRUST_PROXY is unset/)
+    expect(warnings.join(' ')).toMatch(/FRONTEND_URL contains a non-https/)
+    expect(warnings.join(' ')).toMatch(/UPLOAD_SCANNER=none/)
+    expect(warnings.join(' ')).toMatch(/RATE_LIMIT_STORE=memory/)
+    expect(warnings.join(' ')).not.toContain('www.example.test')
+  })
+
+  it('is quiet for a complete production configuration and outside production', () => {
+    expect(
+      productionWarnings({
+        ...production,
+        trustProxy: 1,
+        allowedOrigins: ['https://www.example.test'],
+        rateLimitStore: 'postgres',
+        uploadScanner: { kind: 'clamav', host: 'c', port: 3310, timeoutMs: 1 },
+      }),
+    ).toStrictEqual([])
+    expect(productionWarnings(loadConfig(baseEnv))).toStrictEqual([])
   })
 })

@@ -31,7 +31,11 @@ export interface SessionOptions {
   store: Store
   // true in production: the cookie is only sent over HTTPS.
   secureCookies: boolean
+  // SESSION_COOKIE_SAMESITE (default lax; see config/env.ts).
+  sameSite?: SessionCookieSameSite
 }
+
+export type SessionCookieSameSite = 'lax' | 'strict' | 'none'
 
 export interface SessionManager {
   middleware: RequestHandler
@@ -51,13 +55,19 @@ export function createSessionManager({
   secret,
   store,
   secureCookies,
+  sameSite = 'lax',
 }: SessionOptions): SessionManager {
+  if (sameSite === 'none' && !secureCookies) {
+    throw new Error('SameSite=None session cookies require Secure cookies')
+  }
   // Same attributes for setting and clearing, so logout clears the cookie.
   const cookie: CookieOptions = {
     httpOnly: true,
-    // Same-site deployment (Architecture §53): Lax blocks cross-site
-    // subrequests while keeping normal top-level navigation working.
-    sameSite: 'lax',
+    // Same-site deployment (Architecture §53, default): Lax blocks
+    // cross-site subrequests while keeping normal top-level navigation
+    // working. "none" exists only for an explicit cross-site topology
+    // (Secure required; CSRF token and the CORS allowlist still apply).
+    sameSite,
     secure: secureCookies,
     path: '/',
   }

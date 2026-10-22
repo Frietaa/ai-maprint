@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
 import { createApp } from './app.js'
-import { loadConfig } from './config/env.js'
+import { loadConfig, productionWarnings } from './config/env.js'
 import {
   createPgSessionStore,
   DEFAULT_PRUNE_INTERVAL_SECONDS,
@@ -35,6 +35,9 @@ if (existsSync(envFile)) {
 // DATABASE_URL is missing or invalid.
 const config = loadConfig()
 setLogger(createLogger({ level: config.logLevel }))
+for (const warning of productionWarnings(config)) {
+  logger().warn('config.warning', { message: warning })
+}
 
 // Small dedicated pool for the session store. Connections open lazily, so
 // /api/v1/health still works while the database is unreachable.
@@ -69,6 +72,7 @@ createApp({
       pruneIntervalSeconds: DEFAULT_PRUNE_INTERVAL_SECONDS,
     }),
     secureCookies: config.production,
+    sameSite: config.sessionCookieSameSite,
     googleVerifier: config.googleClientId
       ? createGoogleVerifier(config.googleClientId)
       : null,

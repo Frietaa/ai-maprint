@@ -32,6 +32,8 @@ export interface ApiConfig {
   logLevel: LogLevel
   // Malware scanning of uploads (UPLOAD_SCANNER, KI-019).
   uploadScanner: UploadScannerConfig
+  // Session cookie SameSite policy (SESSION_COOKIE_SAMESITE, KI-022).
+  sessionCookieSameSite: 'lax' | 'strict' | 'none'
 }
 
 export type UploadScannerConfig =
@@ -210,6 +212,58 @@ export function parseUploadScanner(
   }
 }
 
+// SESSION_COOKIE_SAMESITE: "lax" (default; website and API on the same
+// site, e.g. www.example.id + api.example.id), "strict", or "none" for an
+// explicit cross-site deployment — allowed only in production, where the
+// cookie is Secure. Third-party cookie blocking in browsers makes "none"
+// unreliable, so a same-site topology is strongly preferred (KI-022).
+export function parseSessionCookieSameSite(
+  raw: string | undefined,
+  production: boolean,
+): 'lax' | 'strict' | 'none' {
+  if (raw === undefined) return 'lax'
+  if (raw !== 'lax' && raw !== 'strict' && raw !== 'none') {
+    throw new Error(
+      'Invalid SESSION_COOKIE_SAMESITE: expected "lax", "strict" or "none"',
+    )
+  }
+  if (raw === 'none' && !production) {
+    throw new Error(
+      'SESSION_COOKIE_SAMESITE=none requires NODE_ENV=production (Secure cookies over HTTPS)',
+    )
+  }
+  return raw
+}
+
+// Production settings that are valid but often wrong; reported as warnings
+// at start-up (names only, never values).
+export function productionWarnings(config: ApiConfig): string[] {
+  if (!config.production) return []
+  const warnings: string[] = []
+  if (config.trustProxy === false) {
+    warnings.push(
+      'TRUST_PROXY is unset: behind a TLS-terminating proxy, Secure session cookies are not set and rate limits see the proxy IP',
+    )
+  }
+  if (config.allowedOrigins.length === 0) {
+    warnings.push(
+      'FRONTEND_URL is unset: only same-origin (reverse-proxied) browser access works',
+    )
+  }
+  if (config.allowedOrigins.some((origin) => origin.startsWith('http:'))) {
+    warnings.push('FRONTEND_URL contains a non-https origin')
+  }
+  if (config.uploadScanner.kind === 'none') {
+    warnings.push('UPLOAD_SCANNER=none: uploads are not scanned for malware')
+  }
+  if (config.rateLimitStore === 'memory') {
+    warnings.push(
+      'RATE_LIMIT_STORE=memory: limits are per process and reset on restart',
+    )
+  }
+  return warnings
+}
+
 export function loadConfig(env: Env = process.env): ApiConfig {
   const production = readOptional(env, 'NODE_ENV') === 'production'
   return {
@@ -234,5 +288,9 @@ export function loadConfig(env: Env = process.env): ApiConfig {
     ),
     logLevel: parseLogLevel(readOptional(env, 'LOG_LEVEL')),
     uploadScanner: parseUploadScanner(env, production),
+    sessionCookieSameSite: parseSessionCookieSameSite(
+      readOptional(env, 'SESSION_COOKIE_SAMESITE'),
+      production,
+    ),
   }
 }

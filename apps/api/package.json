@@ -8,6 +8,8 @@
     "typecheck": "prisma generate && tsc -b",
     "build": "prisma generate && tsc -b tsconfig.build.json",
     "start": "node dist/server.js",
+    "start:admin-create": "node dist/cli/admin-create.js",
+    "start:files-cleanup": "node dist/cli/files-cleanup.js",
     "lint": "eslint .",
     "test": "vitest run --exclude \"**/*.db.test.ts\"",
     "test:watch": "vitest --exclude \"**/*.db.test.ts\"",
@@ -16,6 +18,7 @@
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
@@ -23,7 +26,7 @@
     "db:test:rebuild": "tsx scripts/test-db.ts rebuild",
     "e2e:api": "tsx --conditions=development scripts/e2e-server.ts",
     "e2e:fixtures:clean": "tsx scripts/e2e-fixtures.ts clean",
-    "admin:create": "tsx scripts/admin-create.ts",
+    "admin:create": "tsx src/cli/admin-create.ts",
     "files:cleanup": "tsx src/cli/files-cleanup.ts"
   },
   "devDependencies": {

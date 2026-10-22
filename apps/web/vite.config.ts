@@ -2,6 +2,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+import { checkProductionApiUrl } from './hosting/build-checks.ts'
 import {
   cacheControlFor,
   originOf,
@@ -39,18 +40,23 @@ function productionHeaders(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), productionHeaders()],
-  server: {
-    proxy: { '/api': localApi },
-  },
-  preview: {
-    proxy: { '/api': localApi },
-  },
-  test: {
-    environment: 'jsdom',
-    // Playwright specs in e2e/ are run by Playwright, not Vitest.
-    include: ['src/**/*.test.{ts,tsx}', 'hosting/**/*.test.ts'],
-    setupFiles: ['./src/test/setup.ts'],
-  },
+export default defineConfig(({ command, mode }) => {
+  if (command === 'build') {
+    checkProductionApiUrl(process.env.VITE_API_BASE_URL, mode)
+  }
+  return {
+    plugins: [react(), tailwindcss(), productionHeaders()],
+    server: {
+      proxy: { '/api': localApi },
+    },
+    preview: {
+      proxy: { '/api': localApi },
+    },
+    test: {
+      environment: 'jsdom',
+      // Playwright specs in e2e/ are run by Playwright, not Vitest.
+      include: ['src/**/*.test.{ts,tsx}', 'hosting/**/*.test.ts'],
+      setupFiles: ['./src/test/setup.ts'],
+    },
+  }
 })

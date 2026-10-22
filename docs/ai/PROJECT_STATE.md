@@ -86,9 +86,17 @@ Phase 07 (Security, Reliability \& Production Hardening): AUTONOMOUSLY
 
 COMPLETED / VERIFIED (TASK-07.10 PASS, 2026-10-22; checkpoint commit
 
-"chore: complete Phase 07 production hardening"). Plan in
+54ed7d8). Plan in docs/ai/PHASE\_07.md, tasks TASK\_07.01..07.10.
 
-docs/ai/PHASE\_07.md, tasks TASK\_07.01..07.10.
+Phase 08 (Production Infrastructure \& Deployment Readiness): AUTONOMOUSLY
+
+COMPLETED / VERIFIED (TASK-08.10 PASS, 2026-10-22; checkpoint commit
+
+"chore: complete Phase 08 deployment readiness"). Deployment-ready;
+
+production provider/account configuration pending. Plan in
+
+docs/ai/PHASE\_08.md, tasks TASK\_08.01..08.10.
 
 Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
@@ -3950,13 +3958,159 @@ TASK-07.10 Phase 07 Independent Verification: PASS (2026-10-22)
 
 
 
+\## Phase 08 — Production Infrastructure \& Deployment Readiness (AUTONOMOUSLY COMPLETED / VERIFIED)
+
+
+
+Baseline: Phase 07 checkpoint commit 54ed7d8, clean tree.
+
+
+
+TASK-08.01 Deployment Decision Package: DONE (2026-10-22)
+
+\- docs/DEPLOYMENT.md rewritten: topology (same-site recommended), owner
+
+  decisions matrix (domain, website host, API host, PostgreSQL, object
+
+  storage, scanner, scheduler, Google), integration status. Fixed
+
+  TASK-07.10 F-1 (package.json description restored).
+
+
+
+TASK-08.02 Environment Contract (KI-022): DONE (2026-10-22)
+
+\- SESSION\_COOKIE\_SAMESITE (none only in production/Secure);
+
+  productionWarnings (TRUST\_PROXY/FRONTEND\_URL unset, http origin,
+
+  UPLOAD\_SCANNER=none, memory rate limits) logged as config.warning;
+
+  website build refuses a non-https remote VITE\_API\_BASE\_URL
+
+  (hosting/build-checks.ts). Env inventory: root/.env.example,
+
+  apps/api/.env.example, apps/web/.env.example, DEPLOYMENT.md §3.
+
+
+
+TASK-08.03 Commands: DONE (2026-10-22)
+
+\- admin-create moved to src/cli (TASK-07.10 F-2); built CLIs
+
+  dist/cli/admin-create.js and files-cleanup.js; npm scripts
+
+  start:admin-create, start:files-cleanup, db:migrate:deploy (api and
+
+  root). Built CLIs smoke-tested on the test DB (create, no-op, missing
+
+  variable, cleanup summary, production refusal).
+
+
+
+TASK-08.04 API Container Image: DONE (2026-10-22)
+
+\- apps/api/Dockerfile (Node 24 slim pinned by digest; build, migrate,
+
+  prod-deps, runtime stages; non-root node; read-only app files;
+
+  HEALTHCHECK); .dockerignore; scripts/prune-runtime-deps.mjs keeps only
+
+  the API's runtime closure (node\_modules 349 MB -> 96 MB, image 790 MB ->
+
+  463 MB). Found and fixed during the task: the API's nested zod
+
+  (apps/api/node\_modules) was missing in the runtime stage. Verified:
+
+  production refusal; dev-mode container on the test DB healthy/ready,
+
+  register + login (Argon2id), catalog, admin-create; migrate image on a
+
+  disposable DB applies 8 migrations, re-run no-op, DB dropped.
+
+
+
+TASK-08.05 / 08.06 Database Readiness \& Provider Status: DONE (2026-10-22)
+
+\- DEPLOYMENT.md §7 (TLS, connections, roles, extensions, housekeeping,
+
+  backups) and §8 (object storage pending owner decision; scanner ready
+
+  or explicit none; scheduler pending host).
+
+
+
+TASK-08.07 CI: DONE (2026-10-22)
+
+\- .github/workflows/ci.yml (verify job with ephemeral postgres:17 and
+
+  synthetic credentials: npm ci, format, lint, typecheck,
+
+  check:migrations, prisma validate, unit, test DB rebuild, drift
+
+  --exit-code, DB tests, build, Playwright dev + preview; image job with
+
+  the production-refusal check). Root `npm run verify` / `verify:e2e`.
+
+  No YAML parser is installed locally; Prettier parsed the workflow.
+
+
+
+TASK-08.08 Smoke \& Rollback: DONE (2026-10-22)
+
+\- scripts/smoke.mjs (`npm run smoke -- --web .. --api ..`), read-only, 24
+
+  checks; passed against the local production build + E2E API; failed
+
+  (exit 1) with the API stopped. Release and rollback in DEPLOYMENT.md
+
+  §4, §9, §10.
+
+
+
+TASK-08.09 Readiness Audit: DONE (2026-10-22)
+
+\- docs/RELEASE\_CHECKLIST.md (owner decisions, per-release steps, first
+
+  release, Architecture §63 audit table: object-storage adapter is the
+
+  only production blocker).
+
+\- Verified: npm run verify (format, lint, typecheck, check:migrations,
+
+  validate, npm test 499 = api 196 + web 261 + shared 42, test DB
+
+  rebuild, test:db 336, build); verify:e2e (Playwright 24, preview 2).
+
+\- Known issues: KI-022 RESOLVED; KI-001 decision package ready.
+
+
+
+TASK-08.10 Phase 08 Independent Verification: PASS (2026-10-22)
+
+\- No fixes. Evidence in docs/ai/TASK\_08.10.md: no new migration, no
+
+  drift; npm run verify exit 0; npm test 499, test:db 336, Playwright 24
+
+  (x2), preview 2; no-cache image builds, image contents and runtime
+
+  checks; smoke PASS; dev DB/storage unchanged; test DB empty.
+
+\- Findings: LOW CI not yet run on GitHub (no remote); INFO actions pinned
+
+  to major versions; INFO third-party test files in pg-protocol; INFO
+
+  provider decisions pending (object storage = only start blocker).
+
+
+
 \## Next Action
 
 
 
-Final autonomous run: Phase 07 verified; create the Phase-07 checkpoint
+Final autonomous run: Phase 08 verified; create the Phase-08 checkpoint
 
-commit, then start Phase 08 (Production Infrastructure \& Deployment
+commit, then start Phase 09 (Release Candidate, Full Regression \& Launch
 
 Readiness).
 
