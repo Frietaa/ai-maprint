@@ -6,18 +6,18 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 
 **MVP release candidate — deployment-ready; production provider/account configuration pending.** The application implements the frozen PRD v1.0 MVP. It is not deployed: hosting, managed PostgreSQL, private object storage, scheduler and domain are owner decisions ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) §2). Production refuses to start until a private object-storage adapter exists (KI-019).
 
-| Phase | Scope                                                 | Status                                                      |
-| ----- | ----------------------------------------------------- | ----------------------------------------------------------- |
-| 00    | Repository & tooling foundation                       | COMPLETE / ACCEPTED                                         |
-| 01    | Application & data foundation                         | COMPLETE / ACCEPTED                                         |
-| 02    | Public read experience                                | COMPLETE / ACCEPTED                                         |
-| 03    | Authentication & identity                             | COMPLETE / ACCEPTED                                         |
-| 04    | Order submission, private files & tracking            | COMPLETE / ACCEPTED                                         |
-| 05    | Admin operations & order management                   | COMPLETE / ACCEPTED                                         |
-| 06    | Remaining MVP experience & customer payment UX        | AUTONOMOUSLY COMPLETED / VERIFIED                           |
-| 07    | Security, reliability & production hardening          | AUTONOMOUSLY COMPLETED / VERIFIED                           |
-| 08    | Production infrastructure & deployment readiness      | AUTONOMOUSLY COMPLETED / VERIFIED                           |
-| 09    | Release candidate, full regression & launch readiness | Final audit: [docs/ai/TASK_09.10.md](docs/ai/TASK_09.10.md) |
+| Phase | Scope                                                 | Status                                                                                                                                   |
+| ----- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 00    | Repository & tooling foundation                       | COMPLETE / ACCEPTED                                                                                                                      |
+| 01    | Application & data foundation                         | COMPLETE / ACCEPTED                                                                                                                      |
+| 02    | Public read experience                                | COMPLETE / ACCEPTED                                                                                                                      |
+| 03    | Authentication & identity                             | COMPLETE / ACCEPTED                                                                                                                      |
+| 04    | Order submission, private files & tracking            | COMPLETE / ACCEPTED                                                                                                                      |
+| 05    | Admin operations & order management                   | COMPLETE / ACCEPTED                                                                                                                      |
+| 06    | Remaining MVP experience & customer payment UX        | AUTONOMOUSLY COMPLETED / VERIFIED                                                                                                        |
+| 07    | Security, reliability & production hardening          | AUTONOMOUSLY COMPLETED / VERIFIED                                                                                                        |
+| 08    | Production infrastructure & deployment readiness      | AUTONOMOUSLY COMPLETED / VERIFIED                                                                                                        |
+| 09    | Release candidate, full regression & launch readiness | AUTONOMOUSLY COMPLETED / VERIFIED — final verdict **DEPLOYMENT_READY_PENDING_PROVIDER** ([docs/ai/TASK_09.10.md](docs/ai/TASK_09.10.md)) |
 
 Phases 06–09 ran in one human-authorized autonomous session (each independently verified, then checkpoint-committed). They await the owner's review.
 

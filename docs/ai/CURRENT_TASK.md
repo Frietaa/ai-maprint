@@ -2,14 +2,21 @@
 
 \## Task
 
-PHASE-09 (final autonomous master run) — Release Candidate, Full
-Regression \& Launch Readiness. Active: TASK-09.01..09.09 under the
-release-candidate freeze, then the final project-wide audit TASK-09.10.
+None active. The final autonomous master run (Phases 06-09) is finished.
 
 \## Status
 
-IN PROGRESS (2026-10-22). Baseline commit 308625f (Phase 08 verified).
+FINAL VERDICT: DEPLOYMENT\_READY\_PENDING\_PROVIDER (TASK-09.10,
+2026-10-22). Phases 06-09 AUTONOMOUSLY COMPLETED / VERIFIED and
+checkpoint-committed; awaiting the owner's review.
+
+\## Next Step
+
+Owner: review the consolidated report; decide providers (docs/DEPLOYMENT.md
+section 2) and approve the next work (object-storage adapter, host
+configuration, deployment).
 
 \## Stop Condition
 
-Final verdict after TASK-09.10; no repairs inside the audit.
+STOP. No deployment, purchase or provider configuration without explicit
+human approval.
