@@ -2,14 +2,14 @@
 
 \## Task
 
-Final autonomous master run. Phase 08 verified (TASK-08.10 PASS);
-checkpoint commit, then Phase 09 — Release Candidate, Full Regression \&
-Launch Readiness.
+PHASE-09 (final autonomous master run) — Release Candidate, Full
+Regression \& Launch Readiness. Active: TASK-09.01..09.09 under the
+release-candidate freeze, then the final project-wide audit TASK-09.10.
 
 \## Status
 
-Phase 08 AUTONOMOUSLY COMPLETED / VERIFIED (2026-10-22).
+IN PROGRESS (2026-10-22). Baseline commit 308625f (Phase 08 verified).
 
 \## Stop Condition
 
-STOP on a FAIL/BLOCKED verification or a human-decision gate.
+Final verdict after TASK-09.10; no repairs inside the audit.

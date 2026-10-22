@@ -2295,3 +2295,49 @@ LOW CI not yet executed on GitHub; INFO items in TASK\_08.10.md.
 Production code changed:
 
 None.
+
+
+
+\---
+
+
+
+\## PHASE 08 — Autonomous Checkpoint Commit
+
+Date: 2026-10-22
+
+Status:
+AUTONOMOUSLY COMPLETED / VERIFIED
+
+Changes:
+\- Checkpoint commit 308625f "chore: complete Phase 08 deployment
+  readiness" (after TASK-08.10 PASS); tree clean afterwards
+\- Phase 09 planned: docs/ai/PHASE\_09.md, TASK\_09.01..09.10.md
+
+Production code changed:
+
+None (this entry).
+
+
+
+\---
+
+
+
+\## PHASE 09 — Release Candidate (TASK-09.01..09.09)
+
+Date: 2026-10-22
+
+Status:
+IMPLEMENTED (release-candidate freeze; TASK-09.10 final audit follows)
+
+Changes:
+\- docs/ai/PHASE\_09.md, TASK\_09.01..09.10.md
+\- Removed the stray tracked file "git diff"
+\- e2e/rc-regression.spec.ts (accessibility/responsive regression)
+\- E2E API order limits raised for the shared localhost client
+\- README rewritten; RELEASE\_CHECKLIST counts; KNOWN\_ISSUES release triage
+
+Production code changed:
+
+No (tests, test infrastructure and documentation only).

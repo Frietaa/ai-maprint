@@ -56,6 +56,14 @@ const server = createApp({
   orders: {
     storage: createLocalStorage(E2E_STORAGE_ROOT),
     uploadTempDir: E2E_UPLOAD_TEMP_DIR,
+    // Every Playwright spec shares one client IP (localhost), so the
+    // production budgets would make the suite order-dependent. Rate limiting
+    // itself is covered by the API database tests.
+    rateLimits: {
+      windowMs: 15 * 60 * 1000,
+      submissions: 500,
+      trackingLookups: 2000,
+    },
   },
 }).listen(port, () => {
   console.log(`E2E API (maba_printing_test) listening on port ${port}`)

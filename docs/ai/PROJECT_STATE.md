@@ -92,11 +92,23 @@ Phase 08 (Production Infrastructure \& Deployment Readiness): AUTONOMOUSLY
 
 COMPLETED / VERIFIED (TASK-08.10 PASS, 2026-10-22; checkpoint commit
 
-"chore: complete Phase 08 deployment readiness"). Deployment-ready;
+308625f). Deployment-ready; production provider/account configuration
 
-production provider/account configuration pending. Plan in
+pending. Plan in docs/ai/PHASE\_08.md, tasks TASK\_08.01..08.10.
 
-docs/ai/PHASE\_08.md, tasks TASK\_08.01..08.10.
+Phase 09 (Release Candidate, Full Regression \& Launch Readiness):
+
+AUTONOMOUSLY COMPLETED / VERIFIED (TASK-09.10 final audit, 2026-10-22).
+
+Plan in docs/ai/PHASE\_09.md, tasks TASK\_09.01..09.10.
+
+FINAL PROJECT VERDICT: DEPLOYMENT\_READY\_PENDING\_PROVIDER — the MVP
+
+release candidate is technically ready; provider/account/domain/storage/
+
+scheduler decisions remain with the owner (docs/DEPLOYMENT.md §2). Not
+
+deployed.
 
 Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
@@ -4104,13 +4116,121 @@ TASK-08.10 Phase 08 Independent Verification: PASS (2026-10-22)
 
 
 
+\## Phase 09 — Release Candidate, Full Regression \& Launch Readiness (AUTONOMOUSLY COMPLETED / VERIFIED)
+
+
+
+Baseline: Phase 08 checkpoint commit 308625f, clean tree. Release-candidate
+
+freeze: no feature expansion.
+
+
+
+TASK-09.01 RC Freeze: DONE — RC baseline 308625f; removed the accidentally
+
+tracked file "git diff" (Phase-01 diff-stat output, no secrets); no other
+
+generated/private artifacts tracked.
+
+
+
+TASK-09.02 Functional Regression: DONE — live RC journey on the test DB
+
+(E2E API, isolated storage): 67/67 checks across public reads, auth
+
+(register/normalize/privileged field/me/profile/logout/login/Google 503
+
+boundary), all four order types incl. 415 disguised executable, legal
+
+acknowledgement, server-authoritative ATK, privileged fields, idempotent
+
+retry, safe tracking for each type, member history/ownership, Admin
+
+dashboard/queue/detail/download/transitions/pickup fees (5 km Rp0, 5.01
+
+Rp2.000, 7.3 Rp6.000, 10 Rp10.000)/final price/notes/QRIS pending vs PAID/
+
+catalog/services/location toggle/settings, security extras (CORS, headers,
+
+request ID, 404 shape, CSRF before parsing, session rotation). Retention
+
++30 days covered by the DB suite.
+
+
+
+TASK-09.03 Security Regression: DONE — no dangerouslySetInnerHTML/
+
+innerHTML/eval, no web storage, all target=\_blank with noopener, no
+
+unsafe raw SQL outside the generated client, tracked connection strings
+
+synthetic/placeholder only, no key/pem/dump/.env files tracked; plus the
+
+live checks above and the existing suites.
+
+
+
+TASK-09.04 Data/Migration/Storage Regression: DONE — dev and test share
+
+18 CHECK, 19 FK, 20 PK constraints and 42 indexes; seed rerun idempotent
+
+(identical apart from updated\_at); migrations/manifest unchanged.
+
+
+
+TASK-09.05 Accessibility/Responsive Regression: DONE — e2e/rc-regression
+
+.spec.ts: public (10), member (3) and Admin (7) routes at 360/768/1280 px
+
+without overflow, one h1, one main, named controls/buttons/links, images
+
+with alt; skip link + visible focus; reduced motion. 5 tests green.
+
+
+
+TASK-09.06 Operational Regression: DONE — verify, image builds/run, built
+
+CLIs and smoke passed in Phase 08 and are re-run by the final audit.
+
+
+
+TASK-09.07 Known-Issue Triage: DONE — KNOWN\_ISSUES "Release Triage"
+
+section: no open CRITICAL/HIGH; go-live blockers are provider decisions
+
+(KI-001, KI-019).
+
+
+
+TASK-09.08 Documentation Finalization: DONE — README rewritten (status
+
+table, capabilities, local development, commands, documentation index,
+
+known limitations); every documented command and link checked.
+
+
+
+TASK-09.09 RC E2E \& Performance/SEO: DONE — bundle main 483.6 kB (148.8
+
+kB gzip), Admin chunk 46.9 kB; query-count tests present; lazy images;
+
+conservative refetching; titles/descriptions for 12 public routes and
+
+noindex for private ones. Stabilization: the E2E API now uses generous
+
+order limits (all specs share one localhost IP; rate limiting stays
+
+covered by DB tests) — found when the new spec pushed the suite past 10
+
+submissions. Pre-audit: npm run verify exit 0 (npm test 499, test:db
+
+336), Playwright 29, preview 2.
+
+
+
 \## Next Action
 
 
 
-Final autonomous run: Phase 08 verified; create the Phase-08 checkpoint
-
-commit, then start Phase 09 (Release Candidate, Full Regression \& Launch
-
-Readiness).
+Final autonomous run: TASK-09.10 final project-wide independent audit.
 

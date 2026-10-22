@@ -50,7 +50,7 @@ Use this for every production release. Tick items in the release record (issue, 
 | Database | Prisma + PostgreSQL 17 tested; guidance in DEPLOYMENT.md §7 | Provider pending |
 | Private storage | `StorageService` boundary, contract suite, production guard | **Adapter pending provider (blocker)** |
 | Google configuration | Server-side ID-token verification; optional | Owner creates the OAuth client |
-| Guest / Member / Admin critical flows | Playwright journeys (24) and DB tests | Ready |
+| Guest / Member / Admin critical flows | Playwright journeys and accessibility/responsive regression (29), DB tests (336), release-candidate live journey (67 checks) | Ready |
 | Upload / download authorization | DB tests, file security tests, malware-scanning boundary | Scanner decision pending |
 | Safe tracking DTO | DB tests and live checks; no payment state for guests | Ready |
 | QRIS / Cash | Manual Admin confirmation, customer payment information | Ready (owner uploads the QRIS image to a host) |

@@ -1016,6 +1016,106 @@ same-site deployment is strongly preferred (third-party cookie blocking).
 
 
 
+\## Release Triage (TASK-09.07, 2026-10-22)
+
+
+
+Release candidate 308625f + Phase 09. Columns: status / severity /
+
+production-blocking / owner / next action. History above is unchanged.
+
+
+
+\- KI-001 Hosting provider: DEFERRED, decision package ready / — / YES for
+
+  going live (no host) / owner / choose providers (DEPLOYMENT.md §2).
+
+\- KI-002 Home-directory Git repository: MITIGATED / Medium (workstation
+
+  only) / no / owner / optionally remove the home-directory .git.
+
+\- KI-003 Escaped Markdown in docs/ai: OPEN / Low / no / maintainers /
+
+  optional documentation cleanup; content intact.
+
+\- KI-004 Project-local Git repository: RESOLVED / — / no / — / none.
+
+\- KI-005 Unanchored ignore rules: OPEN / Low / no / maintainers / avoid
+
+  source folders named build, dist or logs.
+
+\- KI-006 Shared build order: RESOLVED / — / no / — / none.
+
+\- KI-007 Local PostgreSQL: RESOLVED (Docker) / — / no / — / none.
+
+\- KI-008 Case-insensitive email: RESOLVED / — / no / — / none.
+
+\- KI-009 Migration line endings: RESOLVED / — / no / — / none
+
+  (check:migrations normalizes line endings too).
+
+\- KI-010 pg deprecation warning: MONITORING, not reproduced / Low / no /
+
+  maintainers / recheck before pg 9.
+
+\- KI-011 Business configuration source: DECIDED (database authoritative) /
+
+  — / no / — / none.
+
+\- KI-012 Catalog pagination: RESOLVED / — / no / — / none.
+
+\- KI-013 Service mapping by category name: MITIGATED / Low / no / owner /
+
+  decide on a business-line column (domain migration needs approval);
+
+  meanwhile keep keyword names (Admin page shows the mapping).
+
+\- KI-014 tsx watch stall: MITIGATED / Low / no (dev only) / maintainers /
+
+  recheck after tsx/Prisma upgrades.
+
+\- KI-015 Shared rate limits: RESOLVED / — / no / operator / set
+
+  TRUST\_PROXY correctly.
+
+\- KI-016 Website headers: MITIGATED / Low / no, but required at go-live /
+
+  operator / configure DEPLOYMENT.md §5 on the host.
+
+\- KI-017 No password/Google linking: ACCEPTED LIMITATION / Low / no /
+
+  owner / revisit with email verification.
+
+\- KI-018 Retention scheduling: MITIGATED / Low / no, but required at
+
+  go-live (privacy obligation) / operator / schedule files:cleanup daily.
+
+\- KI-019 Production object storage / malware scanning: OPEN, boundaries
+
+  ready / Medium / YES — production refuses to start without a private
+
+  object store / owner + developer / choose a provider, implement and
+
+  contract-test the adapter; decide clamd vs explicit none.
+
+\- KI-020 Duplicate submissions: RESOLVED / — / no / — / none.
+
+\- KI-021 Customer QRIS display: RESOLVED / — / no / owner / host the QRIS
+
+  image and set it in Business Settings.
+
+\- KI-022 Session cookie SameSite: RESOLVED / — / no / operator / prefer a
+
+  same-site topology.
+
+
+
+Release-blocking open CRITICAL/HIGH issues: none. Go-live blockers are
+
+provider decisions (KI-001, KI-019), not implementation defects.
+
+
+
 \---
 
 
