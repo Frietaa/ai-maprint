@@ -16,6 +16,17 @@ describe('describeLoadError', () => {
   })
 
   it.each([
+    [401, 'Sesi Anda telah berakhir'],
+    [403, 'Akses ditolak'],
+    [404, 'Data tidak ditemukan'],
+    [429, 'Terlalu banyak permintaan'],
+  ])('explains %i responses', (status, title) => {
+    expect(describeLoadError(new ApiError('http', 'x', status)).title).toBe(
+      title,
+    )
+  })
+
+  it.each([
     new ApiError('http', 'Internal server error', 500),
     new ApiError('invalid-response', 'Unexpected response format', 200),
     new Error('TypeError: x is undefined'),

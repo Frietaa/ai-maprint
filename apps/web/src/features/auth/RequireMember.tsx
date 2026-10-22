@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { NoIndex } from '../../components/layout/NoIndex.tsx'
 import { Navigate, useLocation } from 'react-router'
 import { ErrorState } from '../../components/ui/DataState.tsx'
 import { loginPathFor } from './safe-redirect.ts'
@@ -64,5 +65,10 @@ export function RequireMember({ children }: { children: ReactNode }) {
     )
   }
 
-  return children
+  return (
+    <>
+      <NoIndex />
+      {children}
+    </>
+  )
 }

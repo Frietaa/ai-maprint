@@ -32,6 +32,7 @@ const settings = {
       businessName: 'MABA PRINTING',
       whatsappNumber: '0800-0000-0000',
       logoRef: null,
+      qrisImageRef: null,
       socialLinks: [],
       publicInfo: null,
     },
@@ -81,7 +82,8 @@ describe('Printing order form', () => {
       name: 'Permintaan berhasil dikirim',
     })
     await waitFor(() => expect(heading).toHaveFocus())
-    expect(screen.getByText(PUBLIC_ID)).toBeInTheDocument()
+    // The ID box and the payment notice both show the Public Order ID.
+    expect(screen.getAllByText(PUBLIC_ID).length).toBeGreaterThan(0)
     expect(screen.getByText('Menunggu Konfirmasi')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Salin ID pesanan' }),
@@ -210,6 +212,64 @@ describe('Printing order form', () => {
     await waitFor(() =>
       expect(api.requestsTo('POST', '/api/v1/orders')).toHaveLength(1),
     )
+  })
+
+  it('reuses the Idempotency-Key when resending the same request after a network error', async () => {
+    const api = mockApi({
+      'POST /api/v1/orders': [
+        'network-error',
+        'network-error',
+        receipt('PRINTING'),
+        receipt('PRINTING'),
+      ],
+    })
+    renderRoute('/printing')
+    const scope = await waitFor(() => form('pesan-printing'))
+    fillCustomer(scope)
+    fill(scope, /^Tenggat yang diinginkan/, FUTURE)
+    fill(scope, /^Kebutuhan cetak/, 'Cetak 2 lembar')
+    const send = () =>
+      fireEvent.click(
+        within(scope).getByRole('button', { name: 'Kirim permintaan' }),
+      )
+
+    send()
+    expect(await within(scope).findByRole('alert')).toHaveTextContent(
+      'tidak akan membuat pesanan ganda',
+    )
+    send()
+    await waitFor(() =>
+      expect(api.requestsTo('POST', '/api/v1/orders')).toHaveLength(2),
+    )
+    // Changing the request starts a new key.
+    fill(scope, /^Kebutuhan cetak/, 'Cetak 3 lembar')
+    send()
+    await screen.findByRole('heading', { name: 'Permintaan berhasil dikirim' })
+
+    const keys = api
+      .requestsTo('POST', '/api/v1/orders')
+      .map((post) => post.headers.get('Idempotency-Key'))
+    expect(keys).toHaveLength(3)
+    expect(keys[0]).toMatch(/^[A-Za-z0-9_-]{16,128}$/)
+    expect(keys[1]).toBe(keys[0])
+    expect(keys[2]).not.toBe(keys[0])
+
+    // A new request after a successful one gets a fresh key, even if equal.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Buat permintaan baru' }),
+    )
+    const again = await waitFor(() => form('pesan-printing'))
+    fillCustomer(again)
+    fill(again, /^Tenggat yang diinginkan/, FUTURE)
+    fill(again, /^Kebutuhan cetak/, 'Cetak 3 lembar')
+    fireEvent.click(
+      within(again).getByRole('button', { name: 'Kirim permintaan' }),
+    )
+    await waitFor(() =>
+      expect(api.requestsTo('POST', '/api/v1/orders')).toHaveLength(4),
+    )
+    const fourth = api.requestsTo('POST', '/api/v1/orders')[3]
+    expect(fourth?.headers.get('Idempotency-Key')).not.toBe(keys[2])
   })
 
   it('prefills a member snapshot without changing the profile', async () => {

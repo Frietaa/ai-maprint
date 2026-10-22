@@ -55,7 +55,7 @@ export interface NewOrder {
   submittedByUserId: string | null
 }
 
-const receiptSelect = {
+export const receiptSelect = {
   publicId: true,
   type: true,
   status: true,
@@ -216,6 +216,9 @@ const detailSelect = {
     select: { originalName: true, mimeType: true, sizeBytes: true },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
   },
+  // Customer-safe payment fields only: never the payment ID or the
+  // confirming Admin.
+  payment: { select: { method: true, status: true, amount: true } },
   statusHistory: timelineSelect,
 } satisfies Prisma.OrderSelect
 

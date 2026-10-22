@@ -23,10 +23,26 @@ describe('public query validation', () => {
   it('accepts valid filters', () => {
     expect(
       parseQuery(serviceListQuerySchema, { categoryId: id, locationId: id }),
-    ).toStrictEqual({ categoryId: id, locationId: id })
+    ).toStrictEqual({ categoryId: id, locationId: id, page: 1, pageSize: 100 })
     expect(
       parseQuery(productListQuerySchema, { availability: 'UNAVAILABLE' }),
-    ).toStrictEqual({ availability: 'UNAVAILABLE' })
+    ).toStrictEqual({ availability: 'UNAVAILABLE', page: 1, pageSize: 100 })
+  })
+
+  it('bounds catalog pages', () => {
+    expect(
+      parseQuery(productListQuerySchema, { page: '3', pageSize: '20' }),
+    ).toMatchObject({ page: 3, pageSize: 20 })
+    for (const query of [
+      { page: '0' },
+      { page: '1.5' },
+      { page: 'x' },
+      { pageSize: '0' },
+      { pageSize: '101' },
+      { page: '10001' },
+    ]) {
+      expect(() => parseQuery(serviceListQuerySchema, query)).toThrow()
+    }
     expect(parseQuery(noQuerySchema, {})).toStrictEqual({})
   })
 

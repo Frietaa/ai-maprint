@@ -1,3 +1,4 @@
+import { NoIndex } from '../../components/layout/NoIndex.tsx'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { PageMeta } from '../../components/layout/PageMeta.tsx'
@@ -58,6 +59,7 @@ export function AdminLoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+      <NoIndex />
       <PageMeta title="Masuk Admin" description="Masuk ke area Admin." />
       <main className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">Masuk Admin</h1>

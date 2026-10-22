@@ -261,6 +261,7 @@ describe('GET /api/v1/account/orders/:publicId', () => {
       laptopService: null,
       softwareInstallation: null,
       files: [],
+      payment: null,
     })
     expect(data.timeline).toHaveLength(1)
     expect(response.text).not.toMatch(
@@ -294,6 +295,54 @@ describe('GET /api/v1/account/orders/:publicId', () => {
       address: 'Jl. Uji 1',
     })
     expect(response.text).not.toMatch(/orders\/[0-9a-f]{32}/)
+  })
+
+  it('shows the owner the safe payment state, never the confirming Admin', async () => {
+    const ana = await signedInMember('ana@auth.test.invalid')
+    const budi = await signedInMember('budi@auth.test.invalid')
+    const publicId = await placeOrder(ana.client)
+    const admin = await insertUser({
+      email: 'kasir@auth.test.invalid',
+      name: 'Kasir Rahasia',
+      password: secret,
+      role: 'ADMIN',
+    })
+    const order = await testDb.order.findUniqueOrThrow({ where: { publicId } })
+    await testDb.payment.create({
+      data: {
+        orderId: order.id,
+        method: 'QRIS_STATIC',
+        status: 'PAID',
+        amount: 15000,
+        confirmedById: admin.id,
+        confirmedAt: new Date(),
+      },
+    })
+
+    const response = await ana.client.agent.get(
+      `/api/v1/account/orders/${publicId}`,
+    )
+    const data = bodyOf<ApiItemResponse<MemberOrderDetailDto>>(response).data
+    expect(data.payment).toStrictEqual({
+      method: 'QRIS_STATIC',
+      status: 'PAID',
+      amount: 15000,
+    })
+    expect(response.text).not.toMatch(/Kasir Rahasia|confirmed|"id"/)
+    expect(response.text).not.toContain(admin.id)
+
+    // Guest tracking stays privacy-minimal: no payment state at all.
+    const tracked = await browser(createOrderTestApp()).agent.get(
+      `/api/v1/orders/track/${publicId}`,
+    )
+    expect(tracked.status).toBe(200)
+    expect(tracked.text).not.toMatch(/payment|PAID|QRIS|15000/i)
+
+    // Another member cannot see it.
+    const foreign = await budi.client.agent.get(
+      `/api/v1/account/orders/${publicId}`,
+    )
+    expect(foreign.status).toBe(404)
   })
 
   it('answers 404 for another member’s order and for guest orders', async () => {

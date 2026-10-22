@@ -1,11 +1,13 @@
 // Explicit mapping from repository records to the public DTO contract.
-// Only allow-listed fields are copied: isActive, timestamps, QRIS references
-// and any future internal columns never reach a public response.
+// Only allow-listed fields are copied: isActive, timestamps and any future
+// internal columns never reach a public response. The static QRIS image is
+// public payment information, published only as a browser-safe reference.
 import {
   type CategoryDto,
   type LocationDto,
   parseOpeningHours,
   type ProductDto,
+  safeImageRef,
   type PublicSettingsDto,
   type ServiceDto,
   type SocialLinkDto,
@@ -50,6 +52,7 @@ export function toPublicSettingsDto(
     businessName: textOrNull(record.businessName),
     whatsappNumber: textOrNull(record.whatsappNumber),
     logoRef: textOrNull(record.logoRef),
+    qrisImageRef: safeImageRef(record.qrisImageRef),
     socialLinks: toSocialLinks(record.socialLinks),
     publicInfo: textOrNull(record.publicInfo),
   }

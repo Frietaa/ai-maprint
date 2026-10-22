@@ -5,6 +5,7 @@ import {
   ADMIN_LIMITS,
   PRICE_TYPES,
   PRODUCT_AVAILABILITIES,
+  safeImageRef,
 } from '@maba-printing/shared'
 import { z } from 'zod'
 import { whatsappSchema } from '../validators/auth.validator.js'
@@ -39,28 +40,17 @@ function optionalText(max: number) {
 const description = optionalText(ADMIN_LIMITS.catalogDescriptionMaxLength)
 const rupiah = z.int('Must be a whole number').min(0).max(MAX_DB_INTEGER)
 
-// Image references the website can load safely (see apps/web
-// lib/image-ref.ts): an https URL or a root-relative path. No http, data:,
-// javascript:, protocol-relative URLs or filesystem paths.
+// Image references the website can load safely (shared safeImageRef): an
+// https URL or a root-relative path. No http, data:, javascript:,
+// protocol-relative URLs, credentials or filesystem paths.
 export const imageRefSchema = z
   .string()
   .trim()
   .max(ADMIN_LIMITS.imageRefMaxLength)
-  .refine((value) => {
-    if (value === '') return true
-    if (value.startsWith('/')) {
-      return (
-        !value.startsWith('//') &&
-        !/[\\\s]/.test(value) &&
-        !value.includes('..')
-      )
-    }
-    try {
-      return new URL(value).protocol === 'https:'
-    } catch {
-      return false
-    }
-  }, 'Must be an https URL or a path starting with /')
+  .refine(
+    (value) => value === '' || safeImageRef(value) === value,
+    'Must be an https URL or a path starting with /',
+  )
   .nullable()
   .transform((value) => (value ? value : null))
 

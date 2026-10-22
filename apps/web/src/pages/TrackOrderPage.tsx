@@ -11,6 +11,7 @@ import {
   StatusBadge,
 } from '../features/orders/OrderTimeline.tsx'
 import { useTrackedOrder } from '../features/orders/use-orders.ts'
+import { PaymentInfo } from '../features/payment/PaymentInfo.tsx'
 import { ApiError } from '../lib/api-client.ts'
 import { formatDateTimeWib } from '../lib/format-datetime.ts'
 
@@ -154,6 +155,17 @@ export function TrackOrderPage() {
               <OrderTimeline entries={tracked.data.timeline} />
             </div>
           </section>
+        ) : null}
+        {/* General payment instructions only: guest tracking never shows
+            the order's payment state (PRD §16). */}
+        {tracked.data &&
+        !tracked.isError &&
+        tracked.data.status !== 'CANCELLED' &&
+        tracked.data.status !== 'COMPLETED' ? (
+          <PaymentInfo
+            publicId={tracked.data.publicId}
+            status={tracked.data.status}
+          />
         ) : null}
       </div>
     </>

@@ -30,11 +30,32 @@ describe('toPublicSettingsDto', () => {
       businessName: 'MABA PRINTING',
       whatsappNumber: null,
       logoRef: null,
+      // A bare storage key is not browser-loadable: never published.
+      qrisImageRef: null,
       socialLinks: [
         { platform: 'instagram', url: 'https://example.test/maba' },
       ],
       publicInfo: 'Info',
     })
+  })
+
+  it.each([
+    ['/brand/qris.png', '/brand/qris.png'],
+    ['https://cdn.example.test/qris.png', 'https://cdn.example.test/qris.png'],
+    ['http://cdn.example.test/qris.png', null],
+    ['javascript:alert(1)', null],
+    ['//evil.example.test/qris.png', null],
+  ])('publishes the QRIS reference %s only when browser-safe', (ref, out) => {
+    const dto = toPublicSettingsDto({
+      businessName: null,
+      whatsappNumber: null,
+      logoRef: null,
+      qrisImageRef: ref,
+      socialLinks: null,
+      publicInfo: null,
+      updatedAt: new Date(),
+    })
+    expect(dto.qrisImageRef).toBe(out)
   })
 })
 

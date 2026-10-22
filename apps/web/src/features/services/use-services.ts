@@ -1,11 +1,10 @@
 import {
-  type ApiListResponse,
   PUBLIC_API_PATHS,
   type ServiceDto,
   type ServiceListQuery,
 } from '@maba-printing/shared'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { apiGet } from '../../lib/api-client.ts'
+import { fetchCatalog } from '../../lib/fetch-catalog.ts'
 
 export const servicesQueryKey = (query: ServiceListQuery) =>
   [
@@ -20,14 +19,12 @@ export const servicesQueryKey = (query: ServiceListQuery) =>
 export function useServices(query: ServiceListQuery = {}) {
   return useQuery({
     queryKey: servicesQueryKey(query),
-    queryFn: async ({ signal }) => {
-      const body = await apiGet<ApiListResponse<ServiceDto>>(
+    queryFn: ({ signal }) =>
+      fetchCatalog<ServiceDto>(
         PUBLIC_API_PATHS.services,
         { categoryId: query.categoryId, locationId: query.locationId },
         signal,
-      )
-      return body.data
-    },
+      ),
     placeholderData: keepPreviousData,
   })
 }

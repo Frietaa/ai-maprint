@@ -66,6 +66,14 @@ describe('toMemberOrderDetailDto', () => {
       files: [
         { originalName: 'a.pdf', mimeType: 'application/pdf', sizeBytes: 5 },
       ],
+      payment: {
+        method: 'QRIS_STATIC',
+        status: 'PAID',
+        amount: 3000,
+        id: 'payment-id',
+        confirmedById: 'admin-id',
+        confirmedAt: created,
+      },
       statusHistory: [],
       adminNotes: 'internal',
       storageKey: 'orders/x',
@@ -83,6 +91,38 @@ describe('toMemberOrderDetailDto', () => {
     expect(dto.files).toStrictEqual([
       { name: 'a.pdf', mimeType: 'application/pdf', sizeBytes: 5 },
     ])
-    expect(JSON.stringify(dto)).not.toMatch(/adminNotes|storageKey|internal/)
+    // Customer-safe payment state only (allow-list).
+    expect(dto.payment).toStrictEqual({
+      method: 'QRIS_STATIC',
+      status: 'PAID',
+      amount: 3000,
+    })
+    expect(JSON.stringify(dto)).not.toMatch(
+      /adminNotes|storageKey|internal|payment-id|admin-id|confirmed/,
+    )
+  })
+
+  it('maps a missing payment record to null', () => {
+    const dto = toMemberOrderDetailDto({
+      publicId: 'MP-2026-7K92D4QX8M7RA',
+      type: 'PRINTING',
+      status: 'SUBMITTED',
+      createdAt: created,
+      requestedCompletionAt: null,
+      estimatedTotal: null,
+      finalTotal: null,
+      customerName: 'Rina',
+      customerWhatsapp: '0812',
+      customerEmail: null,
+      description: 'x',
+      location: null,
+      items: [],
+      laptopServiceRequest: null,
+      softwareInstallationRequest: null,
+      files: [],
+      payment: null,
+      statusHistory: [],
+    })
+    expect(dto.payment).toBeNull()
   })
 })

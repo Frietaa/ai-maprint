@@ -32,13 +32,25 @@ describe('GET /api/v1/public/settings', () => {
           businessName: 'Test Business',
           whatsappNumber: '+620000000001',
           logoRef: '/brand/test-logo.png',
+          qrisImageRef: null,
           socialLinks: [
             { platform: 'instagram', url: 'https://example.test/maba' },
           ],
           publicInfo: 'Test public info.',
         },
       })
-      expect(response.text).not.toMatch(/qris|javascript:/i)
+      expect(response.text).not.toMatch(/test-qris|javascript:/i)
+    }))
+
+  it('publishes a browser-safe static QRIS reference', () =>
+    inRollback(async (tx) => {
+      await tx.businessSettings.update({
+        where: { id: 1 },
+        data: { qrisImageRef: '/brand/qris-statis.png' },
+      })
+      const response = await api(tx).get('/api/v1/public/settings')
+      const body = response.body as { data: { qrisImageRef: string | null } }
+      expect(body.data.qrisImageRef).toBe('/brand/qris-statis.png')
     }))
 
   it('returns data: null when settings are not configured', () =>
@@ -130,7 +142,13 @@ describe('GET /api/v1/services', () => {
       const { response, body } = await list(tx)
 
       expect(response.status).toBe(200)
-      expect(body.meta).toStrictEqual({ count: 2 })
+      expect(body.meta).toStrictEqual({
+        count: 2,
+        page: 1,
+        pageSize: 100,
+        total: 2,
+        totalPages: 1,
+      })
       expect(body.data).toStrictEqual([
         {
           id: id.svcBinding,
@@ -180,7 +198,10 @@ describe('GET /api/v1/services', () => {
 
       const closed = await list(tx, `?locationId=${id.locClosed}`)
       expect(closed.response.status).toBe(200)
-      expect(closed.body).toStrictEqual({ data: [], meta: { count: 0 } })
+      expect(closed.body).toStrictEqual({
+        data: [],
+        meta: { count: 0, page: 1, pageSize: 100, total: 0, totalPages: 0 },
+      })
     }))
 
   it.each([
@@ -213,7 +234,13 @@ describe('GET /api/v1/products', () => {
       const { response, body } = await list(tx)
 
       expect(response.status).toBe(200)
-      expect(body.meta).toStrictEqual({ count: 3 })
+      expect(body.meta).toStrictEqual({
+        count: 3,
+        page: 1,
+        pageSize: 100,
+        total: 3,
+        totalPages: 1,
+      })
       expect(body.data.map((p) => [p.name, p.availability])).toStrictEqual([
         ['Test Paper Ream', 'UNAVAILABLE'],
         ['Test Pen', 'AVAILABLE'],
@@ -236,6 +263,30 @@ describe('GET /api/v1/products', () => {
       expect(response.text).not.toMatch(/Eraser|isActive/)
     }))
 
+  it('serves bounded, non-overlapping pages', () =>
+    inRollback(async (tx) => {
+      const all = await list(tx)
+      const first = await list(tx, '?pageSize=2')
+      const second = await list(tx, '?pageSize=2&page=2')
+      const beyond = await list(tx, '?pageSize=2&page=3')
+
+      expect(first.body.meta).toStrictEqual({
+        count: 2,
+        page: 1,
+        pageSize: 2,
+        total: 3,
+        totalPages: 2,
+      })
+      expect(second.body.meta).toMatchObject({ count: 1, page: 2, total: 3 })
+      expect(
+        [...first.body.data, ...second.body.data].map((p) => p.id),
+      ).toStrictEqual(all.body.data.map((p) => p.id))
+      expect(beyond.body.data).toStrictEqual([])
+
+      const tooLarge = await list(tx, '?pageSize=101')
+      expect(tooLarge.response.status).toBe(400)
+    }))
+
   it('filters by category and availability', () =>
     inRollback(async (tx) => {
       const writing = await list(tx, `?categoryId=${id.catWriting}`)
@@ -253,7 +304,10 @@ describe('GET /api/v1/products', () => {
         tx,
         `?categoryId=${id.catWriting}&availability=UNAVAILABLE`,
       )
-      expect(both.body).toStrictEqual({ data: [], meta: { count: 0 } })
+      expect(both.body).toStrictEqual({
+        data: [],
+        meta: { count: 0, page: 1, pageSize: 100, total: 0, totalPages: 0 },
+      })
     }))
 
   it.each([

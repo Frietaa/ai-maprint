@@ -7,7 +7,8 @@ const GENERIC = 'Terjadi gangguan pada server kami. Silakan coba lagi.'
 export function orderErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return GENERIC
   if (error.kind === 'network') {
-    return 'Tidak dapat terhubung. Periksa koneksi internet Anda, lalu coba lagi.'
+    // Resending the unchanged form reuses its Idempotency-Key (KI-020).
+    return 'Tidak dapat terhubung. Periksa koneksi internet Anda, lalu kirim lagi — jika permintaan sempat terkirim, Anda tidak akan membuat pesanan ganda.'
   }
   switch (error.status) {
     case 400:
@@ -15,6 +16,9 @@ export function orderErrorMessage(error: unknown): string {
     case 403:
       return 'Sesi Anda telah berakhir. Muat ulang halaman, lalu coba lagi.'
     case 409:
+      if (error.fieldErrors?.idempotencyKey) {
+        return 'Permintaan ini sudah pernah dikirim. Muat ulang halaman untuk membuat permintaan baru, atau lacak pesanan Anda.'
+      }
       return error.fieldErrors?.locationId
         ? 'Lokasi yang dipilih sedang tidak tersedia. Pilih lokasi lain.'
         : 'Sebagian produk sudah tidak tersedia. Perbarui pilihan Anda, lalu kirim lagi.'

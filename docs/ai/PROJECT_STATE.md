@@ -64,9 +64,25 @@ Plan in docs/ai/PHASE\_04.md, tasks TASK\_04.01..04.10.
 
 Phase 05 (Admin Operations \& Order Management): ACCEPTED and COMPLETE
 
-(human-approved 2026-10-22; verification PASS in TASK-05.10). Plan in
+(human-approved 2026-10-22; verification PASS in TASK-05.10; committed
 
-docs/ai/PHASE\_05.md, tasks TASK\_05.01..05.10.
+aca6d83). Plan in docs/ai/PHASE\_05.md, tasks TASK\_05.01..05.10.
+
+Final autonomous master run (human-authorized 2026-10-22): Phases 06-09
+
+planned and executed autonomously with an independent verification and a
+
+checkpoint commit per phase; status "AUTONOMOUSLY COMPLETED / VERIFIED"
+
+(not human-accepted).
+
+Phase 06 (Remaining MVP Experience \& Customer Payment UX): AUTONOMOUSLY
+
+COMPLETED / VERIFIED (TASK-06.10 PASS, 2026-10-22; checkpoint commit
+
+"feat: complete Phase 06 customer experience"). Plan in
+
+docs/ai/PHASE\_06.md, tasks TASK\_06.01..06.10.
 
 Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
@@ -3570,11 +3586,211 @@ Phase 05 human acceptance (2026-10-22): APPROVED
 
 
 
+\## Phase 06 — Remaining MVP Experience \& Customer Payment UX (AUTONOMOUSLY COMPLETED / VERIFIED)
+
+
+
+Baseline: Phase 05 committed (aca6d83), clean tree, only .env.example
+
+files tracked, 6 migrations unchanged, test DB isolation intact, dev
+
+storage 1 file (human-created). Noted: a stray tracked file named
+
+"git diff" (captured `git diff --stat` output from the Phase-01 commit, no
+
+secrets) — removal scheduled for the Phase-09 release-candidate hygiene.
+
+
+
+TASK-06.01 Remaining MVP Gap Audit: DONE (2026-10-22)
+
+\- Gaps: customer QRIS display (KI-021), member payment state, duplicate
+
+  submissions (KI-020), unbounded catalog lists (KI-012), name-keyword
+
+  service mapping (KI-013). Production DB/deployment/smoke (PRD §32) are
+
+  Phases 07-09. Decisions recorded in docs/ai/PHASE\_06.md.
+
+
+
+TASK-06.02 Customer Payment Information Contract: DONE (2026-10-22)
+
+\- Shared safeImageRef (packages/shared/src/image-ref.ts): one definition
+
+  of browser-safe image references (https URL with host, no credentials,
+
+  no whitespace/backslash; root-relative path without //, /\ or ..),
+
+  used by the API (QRIS publishing, Admin imageRef validation) and the web
+
+  (resolveImageRef). Also closes "/\host" protocol-relative paths that
+
+  bypassed the old web check.
+
+\- PublicSettingsDto.qrisImageRef (safe refs only; legacy storage keys ->
+
+  null). MemberOrderDetailDto.payment {method, status, amount} | null
+
+  (never payment ID, confirming Admin or confirmation time). Guest
+
+  tracking DTO unchanged.
+
+
+
+TASK-06.03 / 06.04 Static QRIS and Payment Status UX: DONE (2026-10-22)
+
+\- PaymentInfo component: Cash / QRIS instructions, QRIS image (alt text,
+
+  fixed size, hidden if it fails to load), manual-confirmation notice
+
+  ("tidak berubah otomatis"), WhatsApp hand-off with the Public Order ID.
+
+  Shown on the receipt, the member order detail (with payment status in
+
+  text: Belum dibayar / Menunggu konfirmasi / Lunas, method, amount) and
+
+  the tracking page (instructions only, no payment state; hidden for
+
+  CANCELLED/COMPLETED). Hidden instructions for PAID or CANCELLED orders.
+
+
+
+TASK-06.05 Order Idempotency (KI-020): DONE (2026-10-22)
+
+\- Additive infrastructure migration 20261022011511\_order\_submission\_keys
+
+  (key\_hash PK, order\_id unique FK, user\_id FK, request\_hash, created\_at;
+
+  hex CHECKs). Applied to dev with `prisma migrate deploy` after a pg\_dump
+
+  backup (scratchpad); dev data fingerprint otherwise unchanged.
+
+\- POST /orders accepts Idempotency-Key ([A-Za-z0-9\_-]{16,128}); replay of
+
+  the same request by the same submitter -> 200 + Idempotent-Replayed with
+
+  the original receipt, checked before files are stored; key row written
+
+  in the order transaction; concurrent duplicates -> exactly one order
+
+  (PK conflict -> files compensated -> replay); different request or
+
+  different owner -> 409 without order data; 24-hour expiry (expired rows
+
+  pruned in the transaction); no key -> previous behavior. CORS allows the
+
+  header.
+
+\- Web: key per distinct submission (request + file metadata), reused on
+
+  resend after an error, renewed after success or change; network-error
+
+  copy reassures that resending creates no duplicate.
+
+\- Tests: 13 DB tests (replay JSON/multipart, guest new session, conflict,
+
+  member binding, expiry, concurrency x2, malformed keys, no key); web
+
+  key-reuse test.
+
+
+
+TASK-06.06 Public Catalog Pagination (KI-012): DONE (2026-10-22)
+
+\- GET /products and /services: page/pageSize (default/max 100), meta
+
+  {count, page, pageSize, total, totalPages}; web fetchCatalog reads pages
+
+  in order (cap 20). Locations unpaginated by design.
+
+
+
+TASK-06.07 Service Business-Line Mapping (KI-013): DONE (2026-10-22)
+
+\- Shared SERVICE\_LINES / serviceLinesForCategory; Admin services page shows
+
+  "Tampil di halaman: ..." per category or an unmatched warning. KI-013
+
+  MITIGATED; business-line column remains a human decision.
+
+
+
+TASK-06.08 Customer UX / Accessibility / Error Hardening: DONE (2026-10-22)
+
+\- Audit of public, auth, order, tracking, account and payment views:
+
+  labels/aria-describedby, focus targets, skip link, reduced motion,
+
+  text status labels were already sound. Fixed: a 401 from an account or
+
+  Admin query now re-checks the session so guards redirect to login
+
+  (session expiry); load errors explain 401/403/404/429 specifically;
+
+  network-error copy for orders explains safe resending; Admin and member
+
+  pages carry robots noindex (PRD §27) and public/robots.txt disallows
+
+  /admin and /account.
+
+
+
+TASK-06.09 Full MVP Integration E2E: DONE (2026-10-22)
+
+\- e2e/mvp-journey.spec.ts (+3): lost response (request committed,
+
+  connection reset) -> resend returns the same Public Order ID, receipt
+
+  shows the static QRIS (synthetic PNG via Playwright route) and the
+
+  manual-confirmation notice, tracking shows instructions without payment
+
+  state; member laptop pickup -> Admin distance 7.3 km (fee Rp6.000),
+
+  final total, CONFIRMED, QRIS PAID -> member sees Lunas, fee and amount,
+
+  no Admin identity, no QRIS once paid; guest legal software request ->
+
+  tracking without private data. E2E settings QRIS ref is now a website
+
+  path. Playwright 24 passed.
+
+\- Known issues: KI-012 RESOLVED, KI-013 MITIGATED, KI-020 RESOLVED,
+
+  KI-021 RESOLVED.
+
+
+
+TASK-06.10 Phase 06 Independent Verification: PASS (2026-10-22)
+
+\- No fixes. Evidence in docs/ai/TASK\_06.10.md: git scope; previous 6
+
+  migrations identical + 1 additive; dev/test status, test rebuild, no
+
+  drift; gates clean; npm test 449 (api 159, web 248, shared 42), test:db
+
+  324, Playwright 24; live API 19/19; dev DB/storage unchanged; test
+
+  DB/storage empty.
+
+\- Findings: F-1 LOW flaky pre-existing Admin E2E toggle step (reload
+
+  before the PUT completes; 2 of 6 runs under load) -> Phase 07 test
+
+  stabilization; F-2 LOW single 529 kB web chunk; F-3 LOW idempotency key
+
+  lost on page reload; F-4 LOW KI-013 needs a human decision.
+
+
+
 \## Next Action
 
 
 
-Phase 05 accepted (2026-10-22); awaiting remaining-project planning. Do
+Final autonomous run: Phase 06 verified; create the Phase-06 checkpoint
 
-not start Phase 06 without explicit instruction.
+commit, then start Phase 07 (Security, Reliability \& Production
+
+Hardening).
 

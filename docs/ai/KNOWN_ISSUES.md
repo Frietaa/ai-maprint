@@ -504,7 +504,19 @@ Title: GET /locations, /services and /products return all public rows
 
 Severity: Low
 
-Status: OPEN (deferred by Phase-02 plan)
+Status: RESOLVED (TASK-06.06, 2026-10-22): GET /products and GET /services
+
+take page/pageSize (default and maximum 100) and return meta {count, page,
+
+pageSize, total, totalPages} with deterministic ordering, so every
+
+response and query is bounded. The website keeps the whole-catalog UX by
+
+reading the pages in order (at most 20 requests). GET /locations stays
+
+unpaginated by design (a handful of physical locations).
+
+Previous status: OPEN (deferred by Phase-02 plan)
 
 Discovered In: TASK-02.02
 
@@ -538,7 +550,19 @@ service categories by name keywords
 
 Severity: Low
 
-Status: OPEN (accepted limitation of the current schema)
+Status: MITIGATED (TASK-06.07, 2026-10-22): the keyword mapping is one
+
+shared definition (packages/shared/src/service-lines.ts) and the Admin
+
+services page shows, under each category, which public service page shows
+
+it, or warns that it matches none. Remaining: a schema-level business-line
+
+column is still the clean fix — a domain-model change that needs the
+
+owner's approval.
+
+Previous status: OPEN (accepted limitation of the current schema)
 
 Discovered In: TASK-02.05
 
@@ -808,7 +832,23 @@ Title: A retried submission after a lost response creates a second order
 
 Severity: Low
 
-Status: OPEN (accepted for MVP)
+Status: RESOLVED (TASK-06.05, 2026-10-22): POST /orders accepts an
+
+Idempotency-Key; the web client sends one per distinct submission and
+
+reuses it when resending. A repeat by the same submitter returns the
+
+original order (200, Idempotent-Replayed) without storing files again; a
+
+different request or owner with the same key gets 409; concurrent
+
+duplicates create exactly one order. Server-side record: additive table
+
+order\_submission\_keys (hashes only, 24-hour window). Residual: reloading
+
+the page between the attempts starts a new key.
+
+Previous status: OPEN (accepted for MVP)
 
 Discovered In: TASK-04.08
 
@@ -838,7 +878,21 @@ Title: The QRIS image reference is stored but not shown to customers
 
 Severity: Low
 
-Status: OPEN (accepted: no customer payment UI in scope yet)
+Status: RESOLVED (TASK-06.02/06.03, 2026-10-22): public settings publish
+
+the QRIS reference when it is browser-safe (https URL or website path; a
+
+legacy storage key is published as null), and customers see it with
+
+Cash/QRIS instructions and a manual-confirmation notice on the receipt,
+
+the tracking page and the member order detail (with the member's payment
+
+status). Still no upload for the image: the owner provides a hosted URL or
+
+a website path (ADR-023).
+
+Previous status: OPEN (accepted: no customer payment UI in scope yet)
 
 Discovered In: TASK-05.08
 

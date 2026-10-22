@@ -27,21 +27,40 @@ export interface ListProductsOptions {
   activeOnly: boolean
   categoryId?: string
   availability?: ProductAvailability
+  // Bounded page (public catalog); omitted = all rows (callers bound it).
+  range?: { skip: number; take: number }
+}
+
+function productWhere({
+  activeOnly,
+  categoryId,
+  availability,
+}: ListProductsOptions): Prisma.ProductWhereInput {
+  return {
+    ...(activeOnly ? { isActive: true, category: { isActive: true } } : {}),
+    ...(categoryId ? { categoryId } : {}),
+    ...(availability ? { availability } : {}),
+  }
 }
 
 export function listProducts(
   db: DbClient,
-  { activeOnly, categoryId, availability }: ListProductsOptions,
+  options: ListProductsOptions,
 ): Promise<ProductRecord[]> {
   return db.product.findMany({
-    where: {
-      ...(activeOnly ? { isActive: true, category: { isActive: true } } : {}),
-      ...(categoryId ? { categoryId } : {}),
-      ...(availability ? { availability } : {}),
-    },
+    where: productWhere(options),
     select: productSelect,
+    // Deterministic, so pages never overlap or skip rows.
     orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }, { id: 'asc' }],
+    ...options.range,
   })
+}
+
+export function countProducts(
+  db: DbClient,
+  options: ListProductsOptions,
+): Promise<number> {
+  return db.product.count({ where: productWhere(options) })
 }
 
 // Returns the row regardless of isActive; the caller decides visibility.

@@ -447,8 +447,11 @@ describe('business settings', () => {
           publicInfo: null,
         },
       })
-      // QRIS stays internal configuration.
-      expect(publicSettings.text).not.toContain('qris')
+      // The static QRIS is public payment information (TASK-06.02), published
+      // as the browser-safe reference the Admin saved.
+      expect(publicSettings.text).toContain(
+        '"qrisImageRef":"https://cdn.example.test/qris.png"',
+      )
 
       const audit = await testDb.adminAuditLog.findMany({
         orderBy: { createdAt: 'asc' },

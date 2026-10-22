@@ -8,6 +8,7 @@ const settings: PublicSettingsDto = {
   businessName: 'Toko Cetak Contoh',
   whatsappNumber: '+62 812-0000-0000',
   logoRef: null,
+  qrisImageRef: null,
   socialLinks: [{ platform: 'instagram', url: 'https://example.test/ig' }],
   publicInfo: null,
 }

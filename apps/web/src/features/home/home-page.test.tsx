@@ -15,6 +15,7 @@ const settings: PublicSettingsDto = {
   businessName: 'Cetak Kampus',
   whatsappNumber: '+62 811-1111-1111',
   logoRef: null,
+  qrisImageRef: null,
   socialLinks: [],
   publicInfo: 'Buka setiap hari kerja.',
 }

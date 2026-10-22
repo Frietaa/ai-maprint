@@ -1,29 +1,12 @@
-import type { ServiceDto } from '@maba-printing/shared'
+import {
+  categoryMatchesLine,
+  type ServiceDto,
+  type ServiceLine,
+} from '@maba-printing/shared'
 
-// The three service-based business lines (PRD §2). Service categories are
-// editable database rows without a fixed "line" column, so pages pick their
-// categories by name keywords (KI-013). No database IDs live in this file.
-export type ServiceLine =
-  'printing' | 'laptop-service' | 'software-installation'
-
-const LINE_KEYWORDS: Record<ServiceLine, readonly string[]> = {
-  printing: ['print', 'cetak', 'fotokopi', 'fotocopy', 'jilid', 'scan'],
-  'laptop-service': ['laptop', 'komputer', 'notebook'],
-  'software-installation': [
-    'software',
-    'instal',
-    'aplikasi',
-    'perangkat lunak',
-  ],
-}
-
-export function categoryMatchesLine(
-  categoryName: string,
-  line: ServiceLine,
-): boolean {
-  const name = categoryName.toLocaleLowerCase('id-ID')
-  return LINE_KEYWORDS[line].some((keyword) => name.includes(keyword))
-}
+// Pages pick their categories with the shared keyword mapping (KI-013,
+// packages/shared/src/service-lines.ts). No database IDs live here.
+export { categoryMatchesLine, type ServiceLine }
 
 export interface ServiceGroup {
   category: ServiceDto['category']

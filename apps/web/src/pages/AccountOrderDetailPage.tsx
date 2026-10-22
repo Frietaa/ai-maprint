@@ -16,6 +16,7 @@ import {
 } from '../features/orders/OrderTimeline.tsx'
 import { formatFileSize } from '../features/orders/order-validation.ts'
 import { useMemberOrder } from '../features/orders/use-orders.ts'
+import { PaymentInfo } from '../features/payment/PaymentInfo.tsx'
 import { ApiError } from '../lib/api-client.ts'
 import { formatDateTimeWib } from '../lib/format-datetime.ts'
 import { formatRupiah } from '../lib/format-price.ts'
@@ -132,6 +133,12 @@ function OrderDetail({ publicId }: { publicId: string }) {
         </Card>
 
         <TypeDetails data={data} />
+
+        <PaymentInfo
+          publicId={data.publicId}
+          status={data.status}
+          payment={data.payment}
+        />
 
         <Card title="Riwayat status">
           <OrderTimeline entries={data.timeline} />

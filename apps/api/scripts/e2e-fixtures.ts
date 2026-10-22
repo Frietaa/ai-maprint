@@ -55,6 +55,7 @@ async function assertTestDatabase(db: DbClient): Promise<void> {
 // because orders reference them (ON DELETE RESTRICT).
 export async function removeAllOrders(db: DbClient): Promise<void> {
   await assertTestDatabase(db)
+  await db.$executeRaw`DELETE FROM order_submission_keys`
   await db.$executeRaw`DELETE FROM order_status_history`
   await db.$executeRaw`DELETE FROM order_files`
   await db.$executeRaw`DELETE FROM order_items`
@@ -109,7 +110,9 @@ export async function applyE2eFixtures(db: PrismaClient): Promise<void> {
         businessName: 'MABA PRINTING E2E',
         whatsappNumber: '+62 800-0000-0000',
         publicInfo: 'Data uji otomatis (sintetis).',
-        qrisImageRef: 'private/e2e-qris.png',
+        // Root-relative website path; the E2E browser serves a synthetic
+        // PNG for it (no real payment data).
+        qrisImageRef: '/brand/e2e-qris.png',
       },
     })
     await tx.location.createMany({

@@ -46,6 +46,7 @@ model User {
   confirmedPayments Payment[]
   statusChanges     OrderStatusHistory[]
   auditLogs         AdminAuditLog[]
+  submissionKeys    OrderSubmissionKey[]
 
   @@map("users")
 }
@@ -262,6 +263,7 @@ model Order {
   payment                     Payment?
   statusHistory               OrderStatusHistory[]
   files                       OrderFile[]
+  submissionKey               OrderSubmissionKey?
 
   // Member order history, admin filtering and newest-first listing
   // (Architecture �26), plus location order queries.
@@ -465,6 +467,32 @@ model BusinessSettings {
   updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("business_settings")
+}
+
+// Duplicate-submission protection for POST /orders (TASK-06.05, KI-020).
+// Infrastructure only, no business data: one row per client Idempotency-Key,
+// written in the same transaction as the order, so a retried submission
+// after a lost response returns the original order. Stores SHA-256 hashes
+// only — never the raw key or request contents. Rows older than 24 hours
+// no longer replay and are pruned by the application.
+model OrderSubmissionKey {
+  // SHA-256 (hex) of the client-generated Idempotency-Key.
+  keyHash     String   @id @map("key_hash") @db.Char(64)
+  orderId     String   @unique @map("order_id") @db.Uuid
+  // Submitting member; null for guests (and Admin sessions, which are not
+  // linked to orders). A replay must come from the same owner.
+  userId      String?  @map("user_id") @db.Uuid
+  // SHA-256 (hex) of the validated request (fields and file metadata); a
+  // different request with the same key is refused.
+  requestHash String   @map("request_hash") @db.Char(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  user  User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("order_submission_keys")
 }
 
 // ---------------------------------------------------------------------------

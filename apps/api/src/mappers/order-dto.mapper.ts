@@ -111,6 +111,13 @@ export function toMemberOrderDetailDto(
       mimeType: file.mimeType,
       sizeBytes: file.sizeBytes,
     })),
+    payment: order.payment
+      ? {
+          method: order.payment.method,
+          status: order.payment.status,
+          amount: order.payment.amount,
+        }
+      : null,
     timeline: toTimeline(order.statusHistory),
   }
 }

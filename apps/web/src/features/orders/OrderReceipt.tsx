@@ -8,6 +8,7 @@ import { Link } from 'react-router'
 import { formatDateTimeWib } from '../../lib/format-datetime.ts'
 import { formatRupiah } from '../../lib/format-price.ts'
 import { orderWhatsappLink } from '../../lib/whatsapp.ts'
+import { PaymentInfo } from '../payment/PaymentInfo.tsx'
 import { useBusinessIdentity } from '../settings/use-public-settings.ts'
 
 interface OrderReceiptProps {
@@ -97,6 +98,15 @@ export function OrderReceipt({ receipt, onNewRequest }: OrderReceiptProps) {
       <p className="mt-3 text-sm text-slate-600">
         Harga akhir dan detail pekerjaan akan kami konfirmasi.
       </p>
+
+      <div className="mt-6">
+        <PaymentInfo
+          publicId={receipt.publicId}
+          status={receipt.status}
+          showWhatsapp={false}
+          headingLevel="h3"
+        />
+      </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Link

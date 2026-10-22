@@ -88,7 +88,7 @@ export async function insertFixtures(tx: DbClient): Promise<void> {
       businessName: 'Test Business',
       whatsappNumber: '+620000000001',
       logoRef: '/brand/test-logo.png',
-      // Must never appear in public responses.
+      // A bare storage key: not browser-safe, so never published.
       qrisImageRef: 'private/test-qris.png',
       socialLinks: {
         instagram: 'https://example.test/maba',

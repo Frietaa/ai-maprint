@@ -10,6 +10,7 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 - **Phase 03 — Authentication & Identity:** COMPLETE / ACCEPTED.
 - **Phase 04 — Order Submission, Private Files & Tracking:** COMPLETE / ACCEPTED.
 - **Phase 05 — Admin Operations & Order Management:** COMPLETE / ACCEPTED.
+- **Phase 06 — Remaining MVP Experience & Customer Payment UX:** IMPLEMENTED / VERIFIED (autonomous run; see `docs/ai/TASK_06.10.md`).
 
 What exists:
 
@@ -18,10 +19,13 @@ What exists:
 - optional member accounts: email + password sign-up/sign-in (Argon2id), a Google Sign-In foundation (server-verified ID token; shown only when configured), sign-out, the `/login`, `/signup` and `/account` pages with the member profile (name, WhatsApp), and "Lanjut sebagai tamu" for guests — `POST /api/v1/auth/register|login|google|logout`, `GET /auth/me`, `GET /auth/csrf`, `GET|PATCH /account/profile`; server-side sessions in PostgreSQL behind an HttpOnly `SameSite=Lax` cookie, CSRF tokens, credentialed CORS allowlist, auth rate limits, security headers and `X-Request-ID`;
 - order requests for all four business lines — Printing (with optional private document upload: PDF, DOCX, PPTX, XLSX, JPG, PNG, validated by content), ATK (available products with quantities and a server-calculated estimate), Laptop Service (drop-off or pickup) and Software Installation (legal software only) — as Guest or Member, with a receipt, a high-entropy Public Order ID and an order-specific WhatsApp deep link (shown when a WhatsApp number is configured): `POST /api/v1/orders`; guest tracking at `/track-order` (`GET /api/v1/orders/track/:publicId`, safe minimum only); member order history at `/account/orders` (`GET /api/v1/account/orders`, `/account/orders/:publicId`). New orders stay "Menunggu Konfirmasi" (SUBMITTED);
 - an Admin area at `/admin` (sign-in at `/admin/login`, ADMIN accounts only): dashboard, order queue with filters and exact Public Order ID search, order detail with the approved status machine (409 on conflicting changes), pricing incl. the laptop pickup fee from the Admin-recorded distance (free up to 5 km, then Rp2.000 per started additional km), internal notes, manual payment confirmation (Cash / static QRIS), Admin-only private document download, management of products, services, categories, locations (opening hours, per-location services) and business settings; every sensitive change is recorded in the Admin audit log (`/api/v1/admin/*`); a 30-day completed-order file cleanup engine (`npm run files:cleanup`);
+- customer payment information: Cash or the owner's static QRIS (shown when configured as an https URL or website path) on the receipt, the tracking page and the member order detail, which also shows the member's payment status; payment is always confirmed manually by an Admin — no gateway;
+- duplicate-submission protection: the website sends an `Idempotency-Key` with each order, so resending after a lost response returns the original order instead of a second one;
+- bounded catalog pages (`GET /products`, `GET /services` with `page`/`pageSize`, max 100 per page);
 - shared public API contracts (`packages/shared`);
 - the PostgreSQL + Prisma persistence foundation: schema, migrations, constraints and indexes, a synthetic development seed, repositories, and a separate test-database workflow.
 
-Not implemented yet: customer-facing payment (customer QRIS display, payment gateway), notifications, production scheduling of the file-retention cleanup (the command exists), Admin account management in the UI (operator command only), password reset, email verification, production object storage, malware scanning of uploads and production deployment.
+Not implemented yet: a payment gateway (out of MVP scope), an upload for the QRIS image (the owner provides a hosted URL or website path), notifications, production scheduling of the file-retention cleanup (the command exists), Admin account management in the UI (operator command only), password reset, email verification, production object storage, malware scanning of uploads and production deployment.
 
 ## Approved Stack
 

@@ -2,6 +2,8 @@ import {
   type AdminServiceDto,
   PRICE_TYPES,
   type PriceType,
+  SERVICE_LINE_LABELS,
+  serviceLinesForCategory,
 } from '@maba-printing/shared'
 import { type FormEvent, useState } from 'react'
 import { PageMeta } from '../../components/layout/PageMeta.tsx'
@@ -115,12 +117,33 @@ export function AdminServicesPage() {
               Perhatian: halaman layanan publik (Printing, Service Laptop,
               Instalasi Software) mengelompokkan kategori berdasarkan namanya.
               Gunakan nama yang memuat kata tersebut agar layanan tampil di
-              halaman yang benar (KI-013).
+              halaman yang benar (KI-013). Halaman tujuan setiap kategori
+              tertera di bawah namanya.
             </p>
           }
+          details={(category) => <CategoryLines name={category.name} />}
         />
       </div>
     </>
+  )
+}
+
+// Which public service page shows a category (shared KI-013 mapping).
+function CategoryLines({ name }: { name: string }) {
+  const lines = serviceLinesForCategory(name)
+  if (lines.length === 0) {
+    return (
+      <span className="mt-0.5 block text-xs font-medium text-amber-800">
+        Tidak cocok dengan halaman layanan mana pun — hanya tampil sebagai
+        katalog lengkap. Ubah namanya agar memuat kata kunci halaman.
+      </span>
+    )
+  }
+  return (
+    <span className="mt-0.5 block text-xs text-slate-600">
+      Tampil di halaman:{' '}
+      {lines.map((line) => SERVICE_LINE_LABELS[line]).join(', ')}
+    </span>
   )
 }
 

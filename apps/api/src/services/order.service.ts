@@ -2,8 +2,10 @@
 // business rule of a submission — identity association, schedule checks,
 // active location, ATK availability and snapshots, totals, the public ID,
 // the type-specific extension, the single transaction and the storage
-// compensation — so controllers only translate HTTP.
-import { ORDER_LIMITS } from '@maba-printing/shared'
+// compensation, the duplicate-submission check — so controllers only
+// translate HTTP.
+import { createHash } from 'node:crypto'
+import { IDEMPOTENCY_KEY_TTL_HOURS, ORDER_LIMITS } from '@maba-printing/shared'
 import type { DbClient } from '../db/prisma.js'
 import { inTransaction } from '../db/transaction.js'
 import {
@@ -20,6 +22,10 @@ import {
   type OrderReceiptRecord,
   publicIdExists,
 } from '../repositories/order.repository.js'
+import {
+  findSubmissionKey,
+  recordSubmissionKey,
+} from '../repositories/order-submission-key.repository.js'
 import { findProductsByIds } from '../repositories/product-catalog.repository.js'
 import {
   newOrderFileKey,
@@ -61,32 +67,73 @@ const MAX_DB_INTEGER = 2_147_483_647
 const PUBLIC_ID_ATTEMPTS = 5
 const DAY_MS = 24 * 60 * 60 * 1000
 
+export const IDEMPOTENCY_CONFLICT_MESSAGE = 'Idempotency key already used'
+const KEY_TTL_MS = IDEMPOTENCY_KEY_TTL_HOURS * 60 * 60 * 1000
+
+export interface SubmissionResult {
+  receipt: OrderReceiptRecord
+  // true when an earlier submission with the same Idempotency-Key created
+  // the order and nothing new was stored.
+  replayed: boolean
+}
+
 export const LOCATION_UNAVAILABLE_MESSAGE = 'Location unavailable'
 export const PRODUCTS_UNAVAILABLE_MESSAGE = 'Some products are unavailable'
 
 // Submits a new order (status SUBMITTED). Files are stored first; if
 // anything fails afterwards they are deleted again, so no order points to a
 // missing file and no known failure leaves orphaned files behind.
+//
+// With an Idempotency-Key (KI-020) a repeat of the same request by the same
+// submitter returns the original order instead of creating another one:
+// checked before any file is stored, and enforced by the key's primary key
+// inside the order transaction for concurrent duplicates.
 export async function submitOrder(
   deps: OrderServiceDeps,
   input: CreateOrderInput,
   submitter: OrderSubmitter | null,
   uploads: readonly AcceptedUpload[],
-): Promise<OrderReceiptRecord> {
+  idempotencyKey: string | null = null,
+): Promise<SubmissionResult> {
   const now = deps.now()
   checkRequest(input, uploads, now)
   // Only MEMBER sessions own orders. ADMIN sessions submit like a guest:
   // the order is not linked to the admin account (no member history).
   const memberId = submitter?.role === 'MEMBER' ? submitter.id : null
+  const key = idempotencyKey
+    ? {
+        keyHash: sha256(idempotencyKey),
+        requestHash: sha256(requestFingerprint(input, uploads)),
+        userId: memberId,
+      }
+    : null
+
+  if (key) {
+    const replay = await findReplay(deps.db, key, now)
+    if (replay) return { receipt: replay, replayed: true }
+  }
 
   const files = await storeUploads(deps.storage, uploads)
   try {
     for (let attempt = 1; attempt <= PUBLIC_ID_ATTEMPTS; attempt += 1) {
       const publicId = deps.generatePublicId(now)
       try {
-        return await inTransaction(deps.db, (tx) =>
-          createInTransaction(tx, input, { publicId, memberId, files }),
-        )
+        const receipt = await inTransaction(deps.db, async (tx) => {
+          const created = await createInTransaction(tx, input, {
+            publicId,
+            memberId,
+            files,
+          })
+          if (key) {
+            await recordSubmissionKey(
+              tx,
+              { ...key, publicId },
+              new Date(now.getTime() - KEY_TTL_MS),
+            )
+          }
+          return created
+        })
+        return { receipt, replayed: false }
       } catch (error) {
         // A unique violation is retried only if it really was the public ID.
         if (
@@ -101,8 +148,56 @@ export async function submitOrder(
     throw new Error('Could not allocate a unique public order ID')
   } catch (error) {
     await removeStored(deps.storage, files)
+    // A concurrent request with the same key committed first.
+    if (key && isUniqueViolation(error)) {
+      const replay = await findReplay(deps.db, key, now)
+      if (replay) return { receipt: replay, replayed: true }
+    }
     throw error
   }
+}
+
+function sha256(value: string): string {
+  return createHash('sha256').update(value).digest('hex')
+}
+
+// The validated request (dates as ISO strings) plus the display metadata of
+// its files; file contents are not hashed.
+function requestFingerprint(
+  input: CreateOrderInput,
+  uploads: readonly AcceptedUpload[],
+): string {
+  return JSON.stringify({
+    input,
+    files: uploads.map((file) => [
+      file.originalName,
+      file.mimeType,
+      file.sizeBytes,
+    ]),
+  })
+}
+
+// The order an unexpired key created, when the same submitter repeats the
+// same request. Reusing a key for anything else is refused (409) without
+// revealing any order data.
+async function findReplay(
+  db: DbClient,
+  key: { keyHash: string; requestHash: string; userId: string | null },
+  now: Date,
+): Promise<OrderReceiptRecord | null> {
+  const existing = await findSubmissionKey(db, key.keyHash)
+  if (!existing || existing.createdAt.getTime() <= now.getTime() - KEY_TTL_MS) {
+    return null
+  }
+  if (
+    existing.userId !== key.userId ||
+    existing.requestHash !== key.requestHash
+  ) {
+    throw new AppError(409, IDEMPOTENCY_CONFLICT_MESSAGE, {
+      idempotencyKey: ['This key was already used for a different request'],
+    })
+  }
+  return existing.order
 }
 
 function checkRequest(

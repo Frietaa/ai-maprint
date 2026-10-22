@@ -3,6 +3,7 @@
 // storage, multipart or React types. Internal UUIDs, storage keys, admin
 // notes and status-change actors are intentionally never part of these
 // DTOs. Money is whole Rupiah; instants are ISO 8601 strings (UTC).
+import type { PaymentMethod, PaymentStatus } from './admin-api.js'
 
 export const ORDER_API_PATHS = {
   orders: '/orders',
@@ -92,6 +93,16 @@ export const UPLOAD_DEFAULT_LIMITS = {
   maxFileBytes: 10 * 1024 * 1024,
   maxTotalBytes: 25 * 1024 * 1024,
 } as const
+
+// Duplicate-submission protection (KI-020). The web client sends a random
+// key per distinct submission and reuses it when retrying the same request;
+// the API returns the original order for a repeat (200 with
+// IDEMPOTENT_REPLAY_HEADER: "true") instead of creating a second one.
+export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key'
+export const IDEMPOTENT_REPLAY_HEADER = 'Idempotent-Replayed'
+export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{16,128}$/
+// A key replays its order for this long; afterwards it starts a new order.
+export const IDEMPOTENCY_KEY_TTL_HOURS = 24
 
 // multipart/form-data field names for PRINTING orders with files.
 export const ORDER_MULTIPART_FIELDS = {
@@ -195,6 +206,16 @@ export interface MemberOrderItemDto {
   subtotal: number | null
 }
 
+// The customer-safe payment state of the member's own order (PRD §18).
+// Payment is confirmed manually by an Admin; the payment ID, the confirming
+// Admin and the confirmation time are never part of customer responses.
+export interface CustomerPaymentDto {
+  method: PaymentMethod
+  status: PaymentStatus
+  // Whole Rupiah; null until the Admin records the amount.
+  amount: number | null
+}
+
 export interface MemberOrderFileDto {
   name: string
   mimeType: string
@@ -226,6 +247,8 @@ export interface MemberOrderDetailDto extends MemberOrderSummaryDto {
     licenseNote: string | null
   } | null
   files: MemberOrderFileDto[]
+  // null until an Admin records a payment (treated as unpaid).
+  payment: CustomerPaymentDto | null
   timeline: OrderTimelineEntryDto[]
 }
 

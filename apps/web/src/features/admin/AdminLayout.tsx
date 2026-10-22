@@ -1,3 +1,4 @@
+import { NoIndex } from '../../components/layout/NoIndex.tsx'
 import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useBusinessIdentity } from '../settings/use-public-settings.ts'
@@ -22,9 +23,12 @@ function navClass({ isActive }: { isActive: boolean }): string {
 // Operational Admin shell: dense, functional, no marketing chrome.
 export function AdminLayout() {
   return (
-    <RequireAdmin>
-      <AdminShell />
-    </RequireAdmin>
+    <>
+      <NoIndex />
+      <RequireAdmin>
+        <AdminShell />
+      </RequireAdmin>
+    </>
   )
 }
 

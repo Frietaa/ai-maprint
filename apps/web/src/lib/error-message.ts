@@ -16,6 +16,28 @@ export function describeLoadError(error: unknown): ErrorCopy {
           'Periksa koneksi internet Anda, lalu coba lagi beberapa saat lagi.',
       }
     }
+    switch (error.status) {
+      case 401:
+        return {
+          title: 'Sesi Anda telah berakhir',
+          description: 'Silakan masuk kembali untuk melanjutkan.',
+        }
+      case 403:
+        return {
+          title: 'Akses ditolak',
+          description: 'Akun Anda tidak memiliki akses ke data ini.',
+        }
+      case 404:
+        return {
+          title: 'Data tidak ditemukan',
+          description: 'Data yang diminta tidak ada atau sudah tidak tersedia.',
+        }
+      case 429:
+        return {
+          title: 'Terlalu banyak permintaan',
+          description: 'Tunggu beberapa saat, lalu coba lagi.',
+        }
+    }
     if (error.kind === 'http' && error.status !== null && error.status < 500) {
       return {
         title: 'Permintaan tidak dapat diproses',

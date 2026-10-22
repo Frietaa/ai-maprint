@@ -67,10 +67,13 @@ export function CategoryManager({
   resource,
   title,
   warning,
+  details,
 }: {
   resource: 'productCategories' | 'serviceCategories'
   title: string
   warning?: ReactNode
+  // Extra information shown under each category name.
+  details?: (category: { name: string }) => ReactNode
 }) {
   const categories = useAdminCatalog(resource)
   const save = useSaveCatalog(resource)
@@ -112,8 +115,11 @@ export function CategoryManager({
             key={category.id}
             className="flex flex-wrap items-center justify-between gap-2 py-2"
           >
-            <span className="flex items-center gap-2">
-              {category.name} <ActiveBadge active={category.isActive} />
+            <span>
+              <span className="flex items-center gap-2">
+                {category.name} <ActiveBadge active={category.isActive} />
+              </span>
+              {details ? details(category) : null}
             </span>
             <button
               type="button"

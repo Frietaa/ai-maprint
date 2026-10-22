@@ -1,7 +1,7 @@
 // Public REST contract (GET-only, unauthenticated) shared by apps/api and
 // apps/web. Implementation-independent: no Prisma, Express or React types.
-// Money is whole Rupiah (integer). Internal fields such as isActive,
-// timestamps and QRIS data are intentionally not part of these DTOs.
+// Money is whole Rupiah (integer). Internal fields such as isActive and
+// timestamps are intentionally not part of these DTOs.
 import type { OpeningHours } from './opening-hours.js'
 
 export const API_PREFIX = '/api/v1'
@@ -34,6 +34,26 @@ export interface ApiListResponse<T> {
   meta: ApiListMeta
 }
 
+// Bounded catalog pages (GET /products, GET /services; KI-012). `count` is
+// the number of rows in this page, `total` the number of matching rows.
+export interface ApiCatalogPageMeta extends ApiListMeta {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+export interface ApiCatalogPageResponse<T> {
+  data: T[]
+  meta: ApiCatalogPageMeta
+}
+
+export const CATALOG_PAGE_LIMITS = {
+  pageSizeDefault: 100,
+  pageSizeMax: 100,
+  pageMax: 10_000,
+} as const
+
 // `errors` maps a field (query parameter or body field) to its messages.
 export interface ApiErrorResponse {
   message: string
@@ -54,6 +74,9 @@ export interface PublicSettingsDto {
   whatsappNumber: string | null
   // URL or storage reference; the web app only renders safe references.
   logoRef: string | null
+  // Static QRIS image for manual payment (PRD §18), published only when
+  // the stored reference is browser-safe (see safeImageRef); else null.
+  qrisImageRef: string | null
   socialLinks: SocialLinkDto[]
   publicInfo: string | null
 }
@@ -100,13 +123,20 @@ export interface ProductDto {
 
 // --- query parameters ------------------------------------------------------
 
-export interface ServiceListQuery {
+export interface CatalogPageQuery {
+  // 1-based; defaults to 1.
+  page?: number
+  // Defaults to and is capped at CATALOG_PAGE_LIMITS.pageSizeMax.
+  pageSize?: number
+}
+
+export interface ServiceListQuery extends CatalogPageQuery {
   categoryId?: string
   // Only services available at this (active) location.
   locationId?: string
 }
 
-export interface ProductListQuery {
+export interface ProductListQuery extends CatalogPageQuery {
   categoryId?: string
   availability?: ProductAvailability
 }

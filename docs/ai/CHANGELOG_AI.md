@@ -2082,3 +2082,61 @@ Changes:
 Production code changed:
 
 None.
+
+
+
+\---
+
+
+
+\## PHASE 06 — Remaining MVP Experience \& Customer Payment UX (TASK-06.01..06.09)
+
+Date: 2026-10-22
+
+Status:
+IMPLEMENTED (final autonomous run; TASK-06.10 verification follows)
+
+Changes:
+\- docs/ai/PHASE\_06.md and TASK\_06.01..06.10.md created
+\- Shared safeImageRef, service-lines mapping, catalog page contract,
+  idempotency constants, CustomerPaymentDto
+\- API: QRIS published as a browser-safe reference; member payment state;
+  Idempotency-Key on POST /orders (additive migration
+  20261022011511\_order\_submission\_keys); paginated /products and
+  /services; CORS allows Idempotency-Key
+\- Web: PaymentInfo (receipt, tracking, member detail); idempotent
+  resubmission; paged catalog reads; Admin category line mapping;
+  session-expiry re-check; specific load errors; noindex + robots.txt
+\- Tests: unit, DB (+ idempotency suite) and Playwright (+3 MVP journeys)
+\- Known issues: KI-012, KI-020, KI-021 resolved; KI-013 mitigated
+
+Production code changed:
+
+Yes (Phase 06 scope only).
+
+
+
+\---
+
+
+
+\## PHASE 06 / TASK-06.10 — Phase 06 Independent Verification
+
+Date: 2026-10-22
+
+Status:
+VERIFICATION PASS (autonomously completed / verified; checkpoint commit
+follows)
+
+Changes:
+None to code, schema or data (verification only; test DB rebuilt and left
+empty). TASK\_06.10.md result, PHASE\_06.md status and Project Memory
+recorded.
+
+Findings:
+F-1 LOW flaky pre-existing Admin E2E toggle step; F-2 LOW bundle size;
+F-3 LOW idempotency key per page load; F-4 LOW KI-013 human decision.
+
+Production code changed:
+
+None.

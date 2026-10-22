@@ -87,6 +87,7 @@ describe('route metadata', () => {
             businessName: 'Cetak Kampus',
             whatsappNumber: null,
             logoRef: null,
+            qrisImageRef: null,
             socialLinks: [],
             publicInfo: null,
           },
@@ -140,5 +141,30 @@ describe('page structure', () => {
       screen.getByRole('link', { name: 'Langsung ke konten utama' }),
     ).toHaveAttribute('href', '#konten-utama')
     expect(screen.getByRole('main')).toHaveAttribute('id', 'konten-utama')
+  })
+})
+
+describe('indexing of private pages (PRD §27)', () => {
+  const robots = () =>
+    document.head.querySelector('meta[name="robots"]')?.getAttribute('content')
+
+  it('marks Admin and member pages noindex, public pages not', async () => {
+    mockApi({
+      '/api/v1/auth/me': {
+        body: { data: { name: 'Ana', email: 'a@x.test', role: 'MEMBER' } },
+      },
+    })
+    const account = renderRoute('/account')
+    await waitFor(() => expect(robots()).toBe('noindex, nofollow'))
+    account.unmount()
+    expect(robots()).toBeUndefined()
+
+    const admin = renderRoute('/admin/login')
+    await waitFor(() => expect(robots()).toBe('noindex, nofollow'))
+    admin.unmount()
+
+    renderRoute('/')
+    await screen.findByRole('main')
+    expect(robots()).toBeUndefined()
   })
 })

@@ -45,31 +45,50 @@ export interface ListServicesOptions {
   categoryId?: string
   // Only services available at this location (and the location is active).
   locationId?: string
+  // Bounded page (public catalog); omitted = all rows (callers bound it).
+  range?: { skip: number; take: number }
+}
+
+function serviceWhere({
+  activeOnly,
+  categoryId,
+  locationId,
+}: ListServicesOptions): Prisma.ServiceWhereInput {
+  return {
+    ...(activeOnly ? activeService : {}),
+    ...(categoryId ? { categoryId } : {}),
+    ...(locationId
+      ? {
+          locations: {
+            some: {
+              locationId,
+              isAvailable: true,
+              location: { isActive: true },
+            },
+          },
+        }
+      : {}),
+  }
 }
 
 export function listServices(
   db: DbClient,
-  { activeOnly, categoryId, locationId }: ListServicesOptions,
+  options: ListServicesOptions,
 ): Promise<ServiceRecord[]> {
   return db.service.findMany({
-    where: {
-      ...(activeOnly ? activeService : {}),
-      ...(categoryId ? { categoryId } : {}),
-      ...(locationId
-        ? {
-            locations: {
-              some: {
-                locationId,
-                isAvailable: true,
-                location: { isActive: true },
-              },
-            },
-          }
-        : {}),
-    },
+    where: serviceWhere(options),
     select: serviceSelect,
+    // Deterministic, so pages never overlap or skip rows.
     orderBy: serviceOrder,
+    ...options.range,
   })
+}
+
+export function countServices(
+  db: DbClient,
+  options: ListServicesOptions,
+): Promise<number> {
+  return db.service.count({ where: serviceWhere(options) })
 }
 
 // Returns the row regardless of isActive; the caller decides visibility.

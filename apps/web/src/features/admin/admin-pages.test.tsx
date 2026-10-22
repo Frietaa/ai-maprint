@@ -441,6 +441,29 @@ describe('Admin catalog pages', () => {
     expect(api.requestsTo('POST', '/api/v1/admin/services')).toHaveLength(0)
   })
 
+  it('shows which public service page each category maps to (KI-013)', async () => {
+    mockApi({
+      '/api/v1/auth/me': admin,
+      '/api/v1/admin/services': { body: { data: [], meta: { count: 0 } } },
+      '/api/v1/admin/service-categories': {
+        body: {
+          data: [
+            { ...category, id: 'sc1', name: 'Cetak Dokumen' },
+            { ...category, id: 'sc2', name: 'Dokumen Lainnya' },
+          ],
+          meta: { count: 2 },
+        },
+      },
+    })
+    renderRoute('/admin/services')
+    expect(
+      await screen.findByText('Tampil di halaman: Printing'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Tidak cocok dengan halaman layanan mana pun/),
+    ).toBeInTheDocument()
+  })
+
   it('creates a location with structured opening hours and toggles service availability', async () => {
     const location = {
       id: 'l1',

@@ -1,6 +1,11 @@
+import {
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_KEY_PATTERN,
+  IDEMPOTENT_REPLAY_HEADER,
+} from '@maba-printing/shared'
 import type { RequestHandler } from 'express'
 import type { DbClient } from '../db/prisma.js'
-import { AppError } from '../errors/app-error.js'
+import { AppError, ValidationError } from '../errors/app-error.js'
 import { itemResponse } from '../http/response.js'
 import { toOrderReceiptDto } from '../mappers/order-dto.mapper.js'
 import {
@@ -33,12 +38,23 @@ declare module 'express-serve-static-core' {
   }
 }
 
+// Optional Idempotency-Key header (KI-020): absent = no duplicate check.
+function readIdempotencyKey(raw: string | undefined): string | null {
+  if (raw === undefined) return null
+  if (!IDEMPOTENCY_KEY_PATTERN.test(raw)) {
+    throw new ValidationError({ idempotencyKey: ['Invalid idempotency key'] })
+  }
+  return raw
+}
+
 // POST /api/v1/orders — Guest or MEMBER (session optional, CSRF required).
+// 201 for a new order; 200 + Idempotent-Replayed for a repeated submission.
 export function createOrderHandler(deps: OrderControllerDeps): RequestHandler {
   return async (req, res) => {
     if (!deps.storage) {
       throw new AppError(503, 'Order submission is not available')
     }
+    const idempotencyKey = readIdempotencyKey(req.get(IDEMPOTENCY_KEY_HEADER))
     const { input, uploads } = req.orderSubmission ?? {
       input: parseBody(createOrderSchema, req.body),
       uploads: [],
@@ -47,7 +63,7 @@ export function createOrderHandler(deps: OrderControllerDeps): RequestHandler {
       ? { id: req.principal.id, role: req.principal.role }
       : null
 
-    const receipt = await submitOrder(
+    const { receipt, replayed } = await submitOrder(
       {
         db: deps.getDb(),
         storage: deps.storage,
@@ -57,7 +73,11 @@ export function createOrderHandler(deps: OrderControllerDeps): RequestHandler {
       input,
       submitter,
       uploads,
+      idempotencyKey,
     )
-    res.status(201).json(itemResponse(toOrderReceiptDto(receipt)))
+    if (replayed) res.set(IDEMPOTENT_REPLAY_HEADER, 'true')
+    res
+      .status(replayed ? 200 : 201)
+      .json(itemResponse(toOrderReceiptDto(receipt)))
   }
 }

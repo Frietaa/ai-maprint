@@ -1,4 +1,4 @@
-import { CSRF_HEADER } from '@maba-printing/shared'
+import { CSRF_HEADER, IDEMPOTENCY_KEY_HEADER } from '@maba-printing/shared'
 import type { RequestHandler } from 'express'
 import { REQUEST_ID_HEADER } from './request-id.js'
 
@@ -32,7 +32,10 @@ export function corsAllowlist(
     res.set('Access-Control-Expose-Headers', REQUEST_ID_HEADER)
     if (req.method === 'OPTIONS') {
       res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, OPTIONS')
-      res.set('Access-Control-Allow-Headers', `Content-Type, ${CSRF_HEADER}`)
+      res.set(
+        'Access-Control-Allow-Headers',
+        `Content-Type, ${CSRF_HEADER}, ${IDEMPOTENCY_KEY_HEADER}`,
+      )
       res.set('Access-Control-Max-Age', '600')
       res.status(204).end()
       return

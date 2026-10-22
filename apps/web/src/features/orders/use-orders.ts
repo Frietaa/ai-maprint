@@ -5,6 +5,7 @@ import {
   type ApiItemResponse,
   type ApiPageResponse,
   type CreateOrderRequest,
+  IDEMPOTENCY_KEY_HEADER,
   type MemberOrderDetailDto,
   type MemberOrderSummaryDto,
   ORDER_API_PATHS,
@@ -18,6 +19,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { apiGet, apiSend } from '../../lib/api-client.ts'
 import { accountQueryKey } from '../auth/use-auth.ts'
 
@@ -36,20 +38,54 @@ export function toOrderBody({ order, files = [] }: SubmitOrderVariables) {
   return form
 }
 
+// Random Idempotency-Key (KI-020). crypto.randomUUID needs a secure
+// context; getRandomValues also works on plain-http development hosts.
+export function newIdempotencyKey(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+    '',
+  )
+}
+
+// Identifies "the same submission": the request plus file metadata.
+export function submissionFingerprint({
+  order,
+  files = [],
+}: SubmitOrderVariables): string {
+  return JSON.stringify([
+    order,
+    files.map((file) => [file.name, file.size, file.type, file.lastModified]),
+  ])
+}
+
+// One Idempotency-Key per distinct submission: resending the identical
+// request (e.g. after a lost response or network error) reuses the key, so
+// the API returns the original order instead of creating a duplicate; any
+// change, or a successful submission, starts a new key.
 export function useSubmitOrder() {
   const queryClient = useQueryClient()
+  const attempt = useRef<{ fingerprint: string; key: string } | null>(null)
   return useMutation({
-    mutationFn: async (variables: SubmitOrderVariables) =>
-      (
+    mutationFn: async (variables: SubmitOrderVariables) => {
+      const fingerprint = submissionFingerprint(variables)
+      if (attempt.current?.fingerprint !== fingerprint) {
+        attempt.current = { fingerprint, key: newIdempotencyKey() }
+      }
+      return (
         await apiSend<ApiItemResponse<OrderReceiptDto>>(
           'POST',
           ORDER_API_PATHS.orders,
           toOrderBody(variables),
+          { [IDEMPOTENCY_KEY_HEADER]: attempt.current.key },
         )
-      ).data,
-    // A member's history now has a new entry.
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: memberOrdersQueryKey }),
+      ).data
+    },
+    onSuccess: () => {
+      attempt.current = null
+      // A member's history now has a new entry.
+      return queryClient.invalidateQueries({ queryKey: memberOrdersQueryKey })
+    },
     // Customer data and files live in memory only while the form exists.
     gcTime: 0,
   })
