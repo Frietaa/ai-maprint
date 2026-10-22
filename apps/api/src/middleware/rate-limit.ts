@@ -1,13 +1,17 @@
-// Rate limits for the authentication endpoints (PRD §26, Architecture §42),
-// per client IP (IPv6 grouped by /56, the library default).
+// Rate limits (PRD §16, §26, Architecture §42), per client IP (IPv6 grouped
+// by /56, the library default).
 //
-// The in-process memory store is the library's documented default and fits
-// the current single-instance deployment. Several API instances would need a
-// shared store (e.g. PostgreSQL/Redis) — a deployment-phase concern.
-// Behind a reverse proxy, TRUST_PROXY must be set so the client IP is right.
+// Counter storage (KI-015): RATE_LIMIT_STORE=postgres shares the counters
+// between all API instances and across restarts (rate-limit-store.ts);
+// `memory` (development/tests) keeps them in this process only. Behind a
+// reverse proxy, TRUST_PROXY must be set so the client IP is right.
 import type { RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import { AppError } from '../errors/app-error.js'
+import type { RateLimitStoreFactory } from './rate-limit-store.js'
+
+// No factory = the library's in-process memory store.
+const memoryStores: RateLimitStoreFactory = () => undefined
 
 export interface AuthRateLimits {
   windowMs: number
@@ -31,16 +35,27 @@ export interface AuthRateLimiters {
   register: RequestHandler
 }
 
-function limiter(
-  windowMs: number,
-  limit: number,
-  skipSuccessfulRequests: boolean,
+interface LimiterOptions {
+  windowMs: number
+  limit: number
+  skipSuccessfulRequests?: boolean
+  safeMethodsExempt?: boolean
+  // Shared store for this limiter, or undefined for the memory store.
+  store?: ReturnType<RateLimitStoreFactory>
+}
+
+function limiter({
+  windowMs,
+  limit,
+  skipSuccessfulRequests = false,
   safeMethodsExempt = false,
-): RequestHandler {
+  store,
+}: LimiterOptions): RequestHandler {
   return rateLimit({
     windowMs,
     limit,
     skipSuccessfulRequests,
+    ...(store && { store }),
     ...(safeMethodsExempt && {
       skip: (req) => req.method === 'GET' || req.method === 'HEAD',
     }),
@@ -56,10 +71,20 @@ function limiter(
 
 export function createAuthRateLimiters(
   limits: AuthRateLimits = DEFAULT_AUTH_RATE_LIMITS,
+  stores: RateLimitStoreFactory = memoryStores,
 ): AuthRateLimiters {
   return {
-    signIn: limiter(limits.windowMs, limits.signInFailures, true),
-    register: limiter(limits.windowMs, limits.registrations, false),
+    signIn: limiter({
+      windowMs: limits.windowMs,
+      limit: limits.signInFailures,
+      skipSuccessfulRequests: true,
+      store: stores('auth-sign-in'),
+    }),
+    register: limiter({
+      windowMs: limits.windowMs,
+      limit: limits.registrations,
+      store: stores('auth-register'),
+    }),
   }
 }
 
@@ -86,10 +111,19 @@ export interface OrderRateLimiters {
 
 export function createOrderRateLimiters(
   limits: OrderRateLimits = DEFAULT_ORDER_RATE_LIMITS,
+  stores: RateLimitStoreFactory = memoryStores,
 ): OrderRateLimiters {
   return {
-    submit: limiter(limits.windowMs, limits.submissions, false),
-    track: limiter(limits.windowMs, limits.trackingLookups, false),
+    submit: limiter({
+      windowMs: limits.windowMs,
+      limit: limits.submissions,
+      store: stores('order-submit'),
+    }),
+    track: limiter({
+      windowMs: limits.windowMs,
+      limit: limits.trackingLookups,
+      store: stores('order-track'),
+    }),
   }
 }
 
@@ -109,9 +143,19 @@ export const DEFAULT_ADMIN_RATE_LIMITS: AdminRateLimits = {
 
 export function createAdminRateLimiters(
   limits: AdminRateLimits = DEFAULT_ADMIN_RATE_LIMITS,
+  stores: RateLimitStoreFactory = memoryStores,
 ): { mutations: RequestHandler; downloads: RequestHandler } {
   return {
-    mutations: limiter(limits.windowMs, limits.mutations, false, true),
-    downloads: limiter(limits.windowMs, limits.downloads, false),
+    mutations: limiter({
+      windowMs: limits.windowMs,
+      limit: limits.mutations,
+      safeMethodsExempt: true,
+      store: stores('admin-mutation'),
+    }),
+    downloads: limiter({
+      windowMs: limits.windowMs,
+      limit: limits.downloads,
+      store: stores('admin-download'),
+    }),
   }
 }

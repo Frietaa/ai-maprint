@@ -95,6 +95,7 @@ export async function removeTestAccounts(db: DbClient): Promise<void> {
   // removes them.
   await db.$executeRaw`DELETE FROM admin_audit_logs`
   await db.$executeRaw`DELETE FROM user_sessions`
+  await db.$executeRaw`DELETE FROM rate_limit_counters`
   await db.$executeRaw`DELETE FROM users WHERE email LIKE ${'%.test.invalid'}`
 }
 

@@ -24,7 +24,7 @@
     "e2e:api": "tsx --conditions=development scripts/e2e-server.ts",
     "e2e:fixtures:clean": "tsx scripts/e2e-fixtures.ts clean",
     "admin:create": "tsx scripts/admin-create.ts",
-    "files:cleanup": "tsx scripts/files-cleanup.ts"
+    "files:cleanup": "tsx src/cli/files-cleanup.ts"
   },
   "devDependencies": {
     "@types/connect-pg-simple": "^7.0.3",

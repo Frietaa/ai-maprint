@@ -26,6 +26,9 @@ export function orderErrorMessage(error: unknown): string {
       return 'Ukuran file terlalu besar. Kirim file yang lebih kecil, atau kirimkan lewat WhatsApp.'
     case 415:
       return 'Jenis file tidak didukung. Gunakan PDF, DOCX, PPTX, XLSX, JPG, atau PNG, atau kirimkan lewat WhatsApp.'
+    case 422:
+      // A document did not pass the malware scan (UPLOAD_SCANNER).
+      return 'Salah satu file tidak lolos pemeriksaan keamanan. Periksa file Anda, atau kirimkan lewat WhatsApp.'
     case 429:
       return 'Terlalu banyak permintaan. Tunggu beberapa saat, lalu coba lagi.'
     case 503:

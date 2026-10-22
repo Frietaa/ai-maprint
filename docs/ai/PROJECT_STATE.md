@@ -80,9 +80,15 @@ Phase 06 (Remaining MVP Experience \& Customer Payment UX): AUTONOMOUSLY
 
 COMPLETED / VERIFIED (TASK-06.10 PASS, 2026-10-22; checkpoint commit
 
-"feat: complete Phase 06 customer experience"). Plan in
+8a46464). Plan in docs/ai/PHASE\_06.md, tasks TASK\_06.01..06.10.
 
-docs/ai/PHASE\_06.md, tasks TASK\_06.01..06.10.
+Phase 07 (Security, Reliability \& Production Hardening): AUTONOMOUSLY
+
+COMPLETED / VERIFIED (TASK-07.10 PASS, 2026-10-22; checkpoint commit
+
+"chore: complete Phase 07 production hardening"). Plan in
+
+docs/ai/PHASE\_07.md, tasks TASK\_07.01..07.10.
 
 Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
@@ -3784,13 +3790,173 @@ TASK-06.10 Phase 06 Independent Verification: PASS (2026-10-22)
 
 
 
+\## Phase 07 — Security, Reliability \& Production Hardening (AUTONOMOUSLY COMPLETED / VERIFIED)
+
+
+
+Baseline: Phase 06 checkpoint commit 8a46464, clean tree.
+
+
+
+TASK-07.01 Threat Model \& Regression Baseline: DONE (2026-10-22)
+
+\- docs/SECURITY.md: assets, actors, 16 attack surfaces with mitigations and
+
+  code references, residual risks. Found: SameSite=Lax is hard-coded
+
+  (KI-022, Phase 08). Fixed TASK-06.10 F-1: the Admin E2E toggle step now
+
+  waits for the PUT response before reloading.
+
+
+
+TASK-07.02 Rate Limiting (KI-015): DONE (2026-10-22)
+
+\- Migration 20261022015824\_rate\_limit\_counters (additive; key PK, hits,
+
+  reset\_at, CHECK hits >= 0); PostgresRateLimitStore (atomic upsert,
+
+  decrement, reset, opportunistic prune); RATE\_LIMIT\_STORE (production
+
+  default postgres); one store per limiter prefix. 7 DB tests incl. two
+
+  app instances sharing one budget and 40 concurrent increments.
+
+
+
+TASK-07.03 Website Security Headers (KI-016): DONE (2026-10-22)
+
+\- apps/web/hosting/security-headers.ts + vite preview plugin;
+
+  playwright.preview.config.ts + e2e-preview spec (production build, 10
+
+  routes, no CSP violations/console errors, immutable assets);
+
+  `npm run test:e2e:preview -w @maba-printing/web`.
+
+
+
+TASK-07.04 Storage Boundary (KI-019): DONE (2026-10-22)
+
+\- storage-factory.ts (single adapter choice; server and CLI use it);
+
+  reusable contract suite src/test/storage-contract.ts (exact bytes, no
+
+  overwrite, idempotent delete, missing download rejects, invalid keys
+
+  rejected everywhere) run against the local adapter.
+
+
+
+TASK-07.05 Malware-Scanning Boundary (KI-019): DONE (2026-10-22)
+
+\- uploads/file-scanner.ts: none and clamav (clamd zINSTREAM, 64 KiB
+
+  chunks, timeout, zPING readiness); scan after content validation and
+
+  before storage; infected -> 422 files.N, unavailable -> 503, nothing
+
+  stored, no order; UPLOAD\_SCANNER required in production; web copy for
+
+  422. Tests with a fake clamd server (clean/infected/large/error/refused/
+
+  timeout/ping) and DB tests.
+
+
+
+TASK-07.06 Retention Scheduling Contract (KI-018): DONE (2026-10-22)
+
+\- CLI moved to src/cli/files-cleanup.ts (built to dist/cli); advisory lock
+
+  (DB-tested across connections); one JSON summary line; exit codes;
+
+  storage factory. Smoke-tested on the test DB.
+
+
+
+TASK-07.07 Logging, Readiness \& Diagnostics: DONE (2026-10-22)
+
+\- observability/logger.ts (JSON lines, LOG\_LEVEL, secret-looking fields
+
+  dropped); request-log middleware (route template only, never concrete
+
+  paths/IDs; probes at debug); error handler, compensation, session store
+
+  and startup log through it; GET /api/v1/readiness (database 2 s,
+
+  storage, scanner ping; 503 without details); health unchanged.
+
+
+
+TASK-07.08 Backup / Restore / Migration Procedures: DONE (2026-10-22)
+
+\- docs/BACKUP\_RESTORE.md and docs/OPERATIONS.md (probes, log events,
+
+  operator commands, scheduling, migrate deploy flow, rollback, rate
+
+  limits, scanning, routine checks); docs/DEPLOYMENT.md started (headers,
+
+  storage and scanner requirements). Restore rehearsal on a disposable
+
+  database: seeded test DB dumped, restored into
+
+  maba\_printing\_restore\_check, fingerprints and migration history
+
+  identical, migrate status up to date, disposable DB dropped, test DB
+
+  rebuilt empty. `npm run check:migrations` (manifest of applied migration
+
+  hashes; tamper test fails as expected).
+
+
+
+TASK-07.09 Security \& Reliability Regression: DONE (2026-10-22)
+
+\- Admin area lazy-loaded (React Router lazy; separate admin-pages chunk
+
+  47 kB; main chunk 483 kB / 149 kB gzip, no size warning); loading
+
+  fallback; test setup warms the chunk.
+
+\- Verified: format, lint, typecheck, build; npm test 493 (api 192, web
+
+  259, shared 42); test:db 335; Playwright 24 (after build+unit+DB, the
+
+  F-1 sequence); preview E2E 2; check:migrations OK.
+
+\- Known issues: KI-015 RESOLVED, KI-016 MITIGATED, KI-018 MITIGATED
+
+  (contract), KI-019 OPEN (boundaries ready, provider pending), KI-022
+
+  added.
+
+
+
+TASK-07.10 Phase 07 Independent Verification: PASS (2026-10-22)
+
+\- No fixes. Evidence in docs/ai/TASK\_07.10.md: committed migrations
+
+  unchanged + 1 additive; no drift; gates clean; npm test 493, test:db
+
+  335, Playwright 24 (x2), preview E2E 2; live two-process checks
+
+  (shared rate limits, readiness, scanner fail-closed, production guard);
+
+  dev DB/storage unchanged; test DB empty.
+
+\- Findings: F-1 LOW package.json description encoding; F-2 LOW
+
+  admin-create not yet a built CLI; KI-022 MEDIUM (Phase 08).
+
+
+
 \## Next Action
 
 
 
-Final autonomous run: Phase 06 verified; create the Phase-06 checkpoint
+Final autonomous run: Phase 07 verified; create the Phase-07 checkpoint
 
-commit, then start Phase 07 (Security, Reliability \& Production
+commit, then start Phase 08 (Production Infrastructure \& Deployment
 
-Hardening).
+Readiness).
 

@@ -201,17 +201,30 @@ test('Admin catalog and settings changes appear on the public site', async ({
   const campus = page.getByRole('region', { name: 'Lokasi Uji Kampus' })
   const binding = campus.getByRole('checkbox', { name: 'Jilid Spiral' })
   await expect(binding).toBeChecked()
+  // The checkbox updates optimistically; wait for the saved PUT before
+  // reloading, or the reload can cancel the request (TASK-06.10 F-1).
+  const servicePut = () =>
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.url().includes('/admin/locations/') &&
+        response.ok(),
+    )
+  const unchecked = servicePut()
   await binding.uncheck()
+  await unchecked
   await page.reload()
   await expect(
     page
       .getByRole('region', { name: 'Lokasi Uji Kampus' })
       .getByRole('checkbox', { name: 'Jilid Spiral' }),
   ).not.toBeChecked()
+  const checked = servicePut()
   await page
     .getByRole('region', { name: 'Lokasi Uji Kampus' })
     .getByRole('checkbox', { name: 'Jilid Spiral' })
     .check()
+  await checked
   await page.reload()
   await expect(
     page

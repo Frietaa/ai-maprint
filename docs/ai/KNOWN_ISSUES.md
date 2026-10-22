@@ -642,7 +642,21 @@ Title: express-rate-limit memory store is per API instance
 
 Severity: Low
 
-Status: OPEN (accepted for the single-instance MVP; deployment phase)
+Status: RESOLVED (TASK-07.02, 2026-10-22): RATE\_LIMIT\_STORE=postgres (the
+
+production default) keeps every limiter's counters in the additive table
+
+rate\_limit\_counters (migration 20261022015824\_rate\_limit\_counters), updated
+
+by one atomic upsert on the database clock, so all API instances share the
+
+budgets and restarts do not reset them (DB-tested with two app instances
+
+and concurrent increments). `memory` remains for development/tests.
+
+Remaining deployment duty: set TRUST\_PROXY to the real proxy hop count.
+
+Previous status: OPEN (accepted for the single-instance MVP; deployment phase)
 
 Discovered In: TASK-03.09
 
@@ -678,7 +692,23 @@ deployment concern
 
 Severity: Low
 
-Status: OPEN (deployment phase)
+Status: MITIGATED (TASK-07.03, 2026-10-22): the website header policy is
+
+defined once in apps/web/hosting/security-headers.ts (CSP without inline
+
+script, API origin and Google Identity Services only; frame-ancestors
+
+'none'; COOP same-origin-allow-popups; nosniff; Referrer-Policy;
+
+Permissions-Policy; HSTS over HTTPS; immutable hashed assets), applied by
+
+`vite preview` and verified against the production build by
+
+`npm run test:e2e:preview` (no CSP violations). Remaining: the chosen host
+
+must send the same headers (docs/DEPLOYMENT.md table).
+
+Previous status: OPEN (deployment phase)
 
 Discovered In: TASK-03.09
 
@@ -756,7 +786,15 @@ Title: Files of COMPLETED orders are not yet deleted after 30 days
 
 Severity: Low
 
-Status: MITIGATED (TASK-05.06, 2026-10-21): orders reach COMPLETED (sets
+Status: MITIGATED (TASK-05.06, 2026-10-21; invocation contract TASK-07.06,
+
+2026-10-22: `node dist/cli/files-cleanup.js` / `npm run files:cleanup`, one
+
+JSON summary line, exit codes 0/1, PostgreSQL advisory lock against
+
+overlapping runs, storage via the factory; schedule daily on the chosen
+
+host, docs/OPERATIONS.md). Earlier: orders reach COMPLETED (sets
 
 completedAt) through the Admin status machine, and the idempotent cleanup
 
@@ -800,7 +838,27 @@ Title: Only the local development storage adapter exists
 
 Severity: Low
 
-Status: OPEN (deployment phase; related to KI-001)
+Status: OPEN — boundaries ready, provider pending (TASK-07.04/07.05,
+
+2026-10-22). Storage: createStorageFromConfig is the single adapter choice
+
+point, a reusable contract suite (src/test/storage-contract.ts) defines
+
+the required behavior, and docs/DEPLOYMENT.md lists the private-store
+
+requirements; the production guard for the local adapter stays until a
+
+real private object store is implemented. Malware scanning: UPLOAD\_SCANNER
+
+= clamav (self-hosted clamd, INSTREAM over TCP, infected -> 422, errors ->
+
+503 fail-closed, readiness ping) or an explicit none; production refuses to
+
+start without a value. Remaining owner decisions: object-storage provider
+
+and whether to run clamd.
+
+Previous status: OPEN (deployment phase; related to KI-001)
 
 Discovered In: TASK-04.03
 
@@ -911,6 +969,40 @@ Impact: Customers receive QRIS details through WhatsApp or at the counter.
 Recommended Action: Add a customer payment view (and an image upload)
 
 when the payment experience is planned.
+
+
+
+\### KI-022 — Session Cookie SameSite Is Fixed to Lax
+
+
+
+ID: KI-022
+
+Title: The session cookie only works when website and API are same-site
+
+Severity: Medium (deployment blocker for a cross-site topology)
+
+Status: OPEN (to be addressed in Phase 08 deployment readiness)
+
+Discovered In: TASK-07.01 threat-model review
+
+Description: middleware/session.ts sets SameSite=Lax unconditionally. That
+
+is correct for the preferred same-site topology (e.g. www.example.id and
+
+api.example.id), but if the website and the API are deployed on different
+
+sites (e.g. two provider subdomains), browsers do not send the cookie on
+
+the website's API calls and sign-in silently fails.
+
+Impact: A cross-site deployment would break member and Admin sessions.
+
+Recommended Action: Make the cookie policy explicit configuration with a
+
+safe default (Lax), allow None only together with Secure, document that
+
+same-site deployment is strongly preferred (third-party cookie blocking).
 
 
 

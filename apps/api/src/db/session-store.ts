@@ -1,6 +1,7 @@
 // Server-only. PostgreSQL-backed express-session store (connect-pg-simple)
 // on the table user_sessions, which is owned by the Prisma migration
 // history (migration auth_sessions) — the library never creates tables.
+import { errorCategory, logger } from '../observability/logger.js'
 import connectPgSimple from 'connect-pg-simple'
 import session from 'express-session'
 import type pg from 'pg'
@@ -25,10 +26,10 @@ export function createPgSessionStore(
     // Log the failure category only; never session payloads or connection
     // details.
     errorLog: (message: unknown, error?: unknown) => {
-      console.error(
-        `Session store: ${String(message)}`,
-        error instanceof Error ? error.name : '',
-      )
+      logger().error('session_store.error', {
+        context: String(message).slice(0, 120),
+        category: error === undefined ? null : errorCategory(error),
+      })
     },
   })
 }

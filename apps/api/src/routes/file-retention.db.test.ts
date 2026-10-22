@@ -3,7 +3,13 @@
 import { writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { cleanupExpiredOrderFiles } from '../admin/file-retention.js'
+import pg from 'pg'
+import { loadTestDatabaseUrl } from '../../scripts/test-database.js'
+import {
+  cleanupExpiredOrderFiles,
+  releaseRetentionLock,
+  tryRetentionLock,
+} from '../admin/file-retention.js'
 import type { OrderStatus } from '../generated/prisma/client.js'
 import type { StorageService } from '../storage/storage-service.js'
 import { newOrderFileKey } from '../storage/storage-service.js'
@@ -155,5 +161,29 @@ describe('cleanupExpiredOrderFiles', () => {
       where: { id: second.id },
     })
     expect(row.deletedAt).not.toBeNull()
+  })
+})
+
+describe('retention run lock', () => {
+  it('lets only one run hold the lock at a time, across connections', async () => {
+    const connect = async () => {
+      const client = new pg.Client({
+        connectionString: loadTestDatabaseUrl().toString(),
+      })
+      await client.connect()
+      return client
+    }
+    const first = await connect()
+    const second = await connect()
+    try {
+      expect(await tryRetentionLock(first)).toBe(true)
+      expect(await tryRetentionLock(second)).toBe(false)
+      await releaseRetentionLock(first)
+      expect(await tryRetentionLock(second)).toBe(true)
+      await releaseRetentionLock(second)
+    } finally {
+      await first.end()
+      await second.end()
+    }
   })
 })

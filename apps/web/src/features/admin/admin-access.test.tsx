@@ -33,10 +33,13 @@ describe('safeAdminRedirectPath', () => {
 })
 
 describe('Admin guard', () => {
-  it('shows nothing of the Admin area while the session is unknown', () => {
+  it('shows nothing of the Admin area while the session is unknown', async () => {
     mockApi({ '/api/v1/auth/me': 'pending' })
     renderRoute('/admin')
-    expect(screen.getByRole('status')).toHaveTextContent('Memeriksa sesi…')
+    expect(await screen.findByText('Memeriksa sesi…')).toHaveAttribute(
+      'role',
+      'status',
+    )
     expect(
       screen.queryByRole('navigation', { name: 'Navigasi admin' }),
     ).toBeNull()

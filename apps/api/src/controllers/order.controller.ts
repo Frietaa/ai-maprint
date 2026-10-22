@@ -14,6 +14,7 @@ import {
   submitOrder,
 } from '../services/order.service.js'
 import type { StorageService } from '../storage/storage-service.js'
+import type { FileScanner } from '../uploads/file-scanner.js'
 import type { PublicOrderIdGenerator } from '../utils/public-order-id.js'
 import { parseBody } from '../validators/body.js'
 import {
@@ -27,6 +28,7 @@ export interface OrderControllerDeps {
   storage: StorageService | null
   generatePublicId: PublicOrderIdGenerator
   now: () => Date
+  scanner: FileScanner
 }
 
 // What the request carried: the order input and validated uploads. The
@@ -69,6 +71,7 @@ export function createOrderHandler(deps: OrderControllerDeps): RequestHandler {
         storage: deps.storage,
         generatePublicId: deps.generatePublicId,
         now: deps.now,
+        scanner: deps.scanner,
       },
       input,
       submitter,

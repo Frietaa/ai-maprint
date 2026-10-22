@@ -74,3 +74,33 @@ export async function cleanupExpiredOrderFiles({
   }
   return summary
 }
+
+// Guard against overlapping runs (two schedulers, or a manual run during a
+// scheduled one): a PostgreSQL session advisory lock, held on a dedicated
+// connection for the whole run. Works across hosts and instances.
+export const RETENTION_LOCK_NAME = 'maba-printing:file-retention'
+
+export interface LockConnection {
+  query(
+    sql: string,
+    values: unknown[],
+  ): Promise<{ rows: Record<string, unknown>[] }>
+}
+
+export async function tryRetentionLock(
+  connection: LockConnection,
+): Promise<boolean> {
+  const result = await connection.query(
+    'SELECT pg_try_advisory_lock(hashtext($1)) AS locked',
+    [RETENTION_LOCK_NAME],
+  )
+  return result.rows[0]?.locked === true
+}
+
+export async function releaseRetentionLock(
+  connection: LockConnection,
+): Promise<void> {
+  await connection.query('SELECT pg_advisory_unlock(hashtext($1))', [
+    RETENTION_LOCK_NAME,
+  ])
+}

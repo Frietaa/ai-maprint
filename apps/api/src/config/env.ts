@@ -1,4 +1,5 @@
 // Server-only configuration. Never import this from apps/web.
+import { type LogLevel, parseLogLevel } from '../observability/logger.js'
 import {
   parseUploadLimits,
   type UploadLimits,
@@ -22,9 +23,25 @@ export interface ApiConfig {
   googleClientId: string | null
   // Private file storage for order documents. Only the local adapter
   // exists; production object storage is chosen at deployment.
-  storageProvider: 'local'
+  storageProvider: StorageProvider
   uploadLimits: UploadLimits
+  // Where rate-limit counters live (KI-015): shared PostgreSQL table or
+  // this process's memory.
+  rateLimitStore: RateLimitStoreKind
+  // LOG_LEVEL: debug, info (default), warn, error or silent.
+  logLevel: LogLevel
+  // Malware scanning of uploads (UPLOAD_SCANNER, KI-019).
+  uploadScanner: UploadScannerConfig
 }
+
+export type UploadScannerConfig =
+  | { kind: 'none' }
+  | { kind: 'clamav'; host: string; port: number; timeoutMs: number }
+
+export type RateLimitStoreKind = 'memory' | 'postgres'
+
+// Implemented StorageService adapters (storage/storage-factory.ts).
+export type StorageProvider = 'local'
 
 type Env = Record<string, string | undefined>
 
@@ -111,7 +128,7 @@ export function parseTrustProxy(raw: string | undefined): number | false {
 export function parseStorageProvider(
   raw: string | undefined,
   production: boolean,
-): 'local' {
+): StorageProvider {
   if (raw !== undefined && raw !== 'local') {
     throw new Error('Invalid STORAGE_PROVIDER: only "local" is supported')
   }
@@ -121,6 +138,76 @@ export function parseStorageProvider(
     )
   }
   return 'local'
+}
+
+// RATE_LIMIT_STORE: "postgres" (shared by all instances, survives restarts)
+// or "memory" (this process only). Default: postgres in production, memory
+// elsewhere.
+export function parseRateLimitStore(
+  raw: string | undefined,
+  production: boolean,
+): RateLimitStoreKind {
+  if (raw === undefined) return production ? 'postgres' : 'memory'
+  if (raw !== 'memory' && raw !== 'postgres') {
+    throw new Error('Invalid RATE_LIMIT_STORE: expected "postgres" or "memory"')
+  }
+  return raw
+}
+
+const DEFAULT_CLAMAV_PORT = 3310
+const DEFAULT_CLAMAV_TIMEOUT_MS = 30_000
+
+function parseBoundedInt(
+  name: string,
+  raw: string | undefined,
+  fallback: number,
+  max: number,
+): number {
+  if (raw === undefined) return fallback
+  const value = Number(raw)
+  if (!/^\d+$/.test(raw) || value < 1 || value > max) {
+    throw new Error(`Invalid ${name}: expected an integer between 1 and ${max}`)
+  }
+  return value
+}
+
+// UPLOAD_SCANNER: "clamav" (CLAMAV_HOST required; CLAMAV_PORT default 3310,
+// CLAMAV_TIMEOUT_MS default 30000) or "none". Production refuses to start
+// without an explicit value, so running without malware scanning is always
+// a deliberate operator decision.
+export function parseUploadScanner(
+  env: Env,
+  production: boolean,
+): UploadScannerConfig {
+  const raw = readOptional(env, 'UPLOAD_SCANNER')
+  if (raw === undefined) {
+    if (production) {
+      throw new Error(
+        'Missing required environment variable: UPLOAD_SCANNER (set "clamav", or "none" to accept uploads without malware scanning)',
+      )
+    }
+    return { kind: 'none' }
+  }
+  if (raw === 'none') return { kind: 'none' }
+  if (raw !== 'clamav') {
+    throw new Error('Invalid UPLOAD_SCANNER: expected "clamav" or "none"')
+  }
+  return {
+    kind: 'clamav',
+    host: readRequired(env, 'CLAMAV_HOST'),
+    port: parseBoundedInt(
+      'CLAMAV_PORT',
+      readOptional(env, 'CLAMAV_PORT'),
+      DEFAULT_CLAMAV_PORT,
+      65_535,
+    ),
+    timeoutMs: parseBoundedInt(
+      'CLAMAV_TIMEOUT_MS',
+      readOptional(env, 'CLAMAV_TIMEOUT_MS'),
+      DEFAULT_CLAMAV_TIMEOUT_MS,
+      600_000,
+    ),
+  }
 }
 
 export function loadConfig(env: Env = process.env): ApiConfig {
@@ -141,5 +228,11 @@ export function loadConfig(env: Env = process.env): ApiConfig {
       readOptional(env, 'UPLOAD_MAX_FILES'),
       readOptional(env, 'UPLOAD_MAX_FILE_SIZE'),
     ),
+    rateLimitStore: parseRateLimitStore(
+      readOptional(env, 'RATE_LIMIT_STORE'),
+      production,
+    ),
+    logLevel: parseLogLevel(readOptional(env, 'LOG_LEVEL')),
+    uploadScanner: parseUploadScanner(env, production),
   }
 }

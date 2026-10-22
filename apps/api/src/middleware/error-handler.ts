@@ -1,6 +1,8 @@
 import type { ApiErrorResponse } from '@maba-printing/shared'
 import type { ErrorRequestHandler, RequestHandler } from 'express'
 import { AppError, NotFoundError } from '../errors/app-error.js'
+import { errorCategory, logger } from '../observability/logger.js'
+import { routeTemplate } from './request-log.js'
 
 // Unknown routes become a JSON 404 in the standard error shape.
 export const notFoundHandler: RequestHandler = (_req, _res, next) => {
@@ -37,12 +39,16 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     return
   }
 
-  // Server-side diagnostics only: request ID, route and the error category.
-  // Never the error object itself (it may carry SQL, query arguments or
-  // other request data), request bodies, cookies or session contents.
-  console.error(
-    `Unhandled error [${req.requestId}] ${req.method} ${req.path}: ${errorCategory(error)}`,
-  )
+  // Server-side diagnostics only: request ID, route template and the error
+  // category. Never the error object itself (it may carry SQL, query
+  // arguments or other request data), the concrete path (it may contain a
+  // Public Order ID), request bodies, cookies or session contents.
+  logger().error('http.unhandled_error', {
+    requestId: req.requestId,
+    method: req.method,
+    route: routeTemplate(req),
+    category: errorCategory(error),
+  })
   res
     .status(500)
     .json({ message: 'Internal server error' } satisfies ApiErrorResponse)
@@ -54,11 +60,4 @@ function clientErrorStatus(error: unknown): number | null {
   return typeof status === 'number' && status >= 400 && status < 500
     ? status
     : null
-}
-
-// e.g. "PrismaClientKnownRequestError P2024" or "TypeError".
-function errorCategory(error: unknown): string {
-  if (!(error instanceof Error)) return typeof error
-  const code = (error as { code?: unknown }).code
-  return typeof code === 'string' ? `${error.name} ${code}` : error.name
 }

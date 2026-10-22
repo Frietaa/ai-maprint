@@ -82,3 +82,14 @@ export function ErrorState({
     </div>
   )
 }
+
+// Shown while a lazily loaded page (the Admin area) is downloaded.
+export function PageLoading() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      <p role="status" aria-live="polite" className="text-slate-600">
+        Memuat halaman…
+      </p>
+    </div>
+  )
+}

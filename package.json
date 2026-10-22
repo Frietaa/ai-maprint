@@ -2,7 +2,7 @@
   "name": "maba-printing",
   "version": "0.0.0",
   "private": true,
-  "description": "MABA PRINTING — integrated printing, ATK, laptop service, and software installation web application.",
+  "description": "MABA PRINTING \u00e2\u20ac\u201d integrated printing, ATK, laptop service, and software installation web application.",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -31,7 +31,8 @@
     "db:test:rebuild": "npm run db:test:rebuild -w @maba-printing/api",
     "db:start": "docker compose -f compose.dev.yml up -d --wait postgres",
     "db:stop": "docker compose -f compose.dev.yml stop postgres",
-    "db:status": "docker compose -f compose.dev.yml ps postgres"
+    "db:status": "docker compose -f compose.dev.yml ps postgres",
+    "check:migrations": "node scripts/check-migrations.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

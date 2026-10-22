@@ -126,12 +126,17 @@ describe('unexpected error logging', () => {
 
     expect(response.status).toBe(500)
     expect(response.body).toStrictEqual({ message: 'Internal server error' })
-    expect(log).toHaveBeenCalledOnce()
-    const line = log.mock.calls[0]?.join(' ') ?? ''
-    expect(line).toMatch(
-      /^Unhandled error \[[0-9a-f-]{36}\] POST \/x: Error P2010$/,
-    )
-    expect(line).not.toMatch(/hunter2|secret|maba\.sid|postgresql/)
-    expect(line).toContain(String(response.headers['x-request-id']))
+    const lines = log.mock.calls.map((call) => String(call[0]))
+    const unhandled = lines
+      .map((line) => JSON.parse(line) as Record<string, unknown>)
+      .find((entry) => entry.event === 'http.unhandled_error')
+    expect(unhandled).toMatchObject({
+      level: 'error',
+      requestId: response.headers['x-request-id'],
+      method: 'POST',
+      route: '/x',
+      category: 'Error P2010',
+    })
+    expect(lines.join('\n')).not.toMatch(/hunter2|secret|maba\.sid|postgresql/)
   })
 })

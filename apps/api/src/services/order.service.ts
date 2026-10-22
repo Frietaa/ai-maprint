@@ -32,7 +32,9 @@ import {
   type StorageService,
 } from '../storage/storage-service.js'
 import type { PublicOrderIdGenerator } from '../utils/public-order-id.js'
+import { type FileScanner, noScanner } from '../uploads/file-scanner.js'
 import type { CreateOrderInput } from '../validators/order.validator.js'
+import { errorCategory, logger } from '../observability/logger.js'
 import { isUniqueViolation } from './auth.service.js'
 
 export interface OrderServiceDeps {
@@ -40,6 +42,8 @@ export interface OrderServiceDeps {
   storage: StorageService
   generatePublicId: PublicOrderIdGenerator
   now: () => Date
+  // Malware scanning of uploads (UPLOAD_SCANNER); default: none.
+  scanner?: FileScanner
 }
 
 // Who submits: the resolved principal, or null for a guest.
@@ -68,6 +72,8 @@ const PUBLIC_ID_ATTEMPTS = 5
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export const IDEMPOTENCY_CONFLICT_MESSAGE = 'Idempotency key already used'
+export const FILE_REJECTED_MESSAGE = 'File rejected'
+export const SCANNING_UNAVAILABLE_MESSAGE = 'File scanning unavailable'
 const KEY_TTL_MS = IDEMPOTENCY_KEY_TTL_HOURS * 60 * 60 * 1000
 
 export interface SubmissionResult {
@@ -113,6 +119,7 @@ export async function submitOrder(
     if (replay) return { receipt: replay, replayed: true }
   }
 
+  await scanUploads(deps.scanner ?? noScanner, uploads)
   const files = await storeUploads(deps.storage, uploads)
   try {
     for (let attempt = 1; attempt <= PUBLIC_ID_ATTEMPTS; attempt += 1) {
@@ -154,6 +161,37 @@ export async function submitOrder(
       if (replay) return { receipt: replay, replayed: true }
     }
     throw error
+  }
+}
+
+// Every upload is scanned before anything is stored. Infected files are
+// refused (422) and nothing of the order is kept; a scanner that cannot
+// answer fails closed (503). Logs carry the scanner and signature name only,
+// never file names or contents.
+async function scanUploads(
+  scanner: FileScanner,
+  uploads: readonly AcceptedUpload[],
+): Promise<void> {
+  for (const [index, upload] of uploads.entries()) {
+    let verdict
+    try {
+      verdict = await scanner.scan(upload.tempPath)
+    } catch (error) {
+      logger().error('upload.scan_unavailable', {
+        scanner: scanner.kind,
+        category: errorCategory(error),
+      })
+      throw new AppError(503, SCANNING_UNAVAILABLE_MESSAGE)
+    }
+    if (!verdict.clean) {
+      logger().warn('upload.rejected_by_scanner', {
+        scanner: scanner.kind,
+        signature: verdict.signature,
+      })
+      throw new AppError(422, FILE_REJECTED_MESSAGE, {
+        [`files.${index}`]: ['File did not pass the security check'],
+      })
+    }
   }
 }
 
@@ -396,10 +434,9 @@ async function removeStored(
     (_file, index) => results[index]?.status === 'rejected',
   )
   if (failed.length > 0) {
-    console.error(
-      `Order file compensation failed for ${failed.length} stored file(s): ${failed
-        .map((file) => file.storageKey)
-        .join(', ')}`,
-    )
+    logger().error('order.file_compensation_failed', {
+      count: failed.length,
+      storageKeys: failed.map((file) => file.storageKey),
+    })
   }
 }

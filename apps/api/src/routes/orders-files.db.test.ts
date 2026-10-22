@@ -6,6 +6,7 @@ import request from 'supertest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OrderOptions } from '../app.js'
 import type { StorageService } from '../storage/storage-service.js'
+import type { FileScanner } from '../uploads/file-scanner.js'
 import {
   createOrderTestApp,
   csrfTokenOf,
@@ -247,6 +248,79 @@ describe('upload rejections', () => {
   })
 })
 
+describe('malware scanning (UPLOAD_SCANNER)', () => {
+  function scanner(result: 'clean' | 'infected' | 'down') {
+    const scan = vi.fn(() =>
+      result === 'down'
+        ? Promise.reject(new Error('connect ECONNREFUSED'))
+        : Promise.resolve(
+            result === 'clean'
+              ? { clean: true as const }
+              : { clean: false as const, signature: 'Eicar-Test-Signature' },
+          ),
+    )
+    const fileScanner: FileScanner = {
+      kind: 'clamav',
+      ping: () => Promise.resolve(),
+      scan,
+    }
+    return { fileScanner, scan }
+  }
+
+  it('stores scanned clean files', async () => {
+    const clean = scanner('clean')
+    const response = await submit(
+      [
+        { content: samples.pdf, filename: 'a.pdf' },
+        { content: samples.png, filename: 'b.png' },
+      ],
+      { orders: { scanner: clean.fileScanner } },
+    )
+    expect(response.status).toBe(201)
+    expect(clean.scan).toHaveBeenCalledTimes(2)
+    expect(await storedFiles()).toHaveLength(2)
+  })
+
+  it('refuses an infected file without storing anything or creating the order', async () => {
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await submit(
+      [
+        { content: samples.pdf, filename: 'Bersih.pdf' },
+        { content: samples.png, filename: 'Rahasia.png' },
+      ],
+      { orders: { scanner: scanner('infected').fileScanner } },
+    )
+    expect(response.status).toBe(422)
+    expect(response.body).toStrictEqual({
+      message: 'File rejected',
+      errors: { 'files.0': ['File did not pass the security check'] },
+    })
+    expect(await testDb.order.count()).toBe(0)
+    expect(await storedFiles()).toHaveLength(0)
+    expect(await pendingUploads()).toHaveLength(0)
+    const logged = warn.mock.calls.map((call) => String(call[0])).join(' ')
+    expect(logged).toContain('upload.rejected_by_scanner')
+    expect(logged).toContain('Eicar-Test-Signature')
+    expect(logged).not.toMatch(/Bersih|Rahasia/)
+  })
+
+  it('fails closed (503) when the scanner is unavailable', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await submit(
+      [{ content: samples.pdf, filename: 'a.pdf' }],
+      {
+        orders: { scanner: scanner('down').fileScanner },
+      },
+    )
+    expect(response.status).toBe(503)
+    expect(response.body).toStrictEqual({
+      message: 'File scanning unavailable',
+    })
+    expect(await testDb.order.count()).toBe(0)
+    expect(await storedFiles()).toHaveLength(0)
+  })
+})
+
 describe('storage compensation', () => {
   it('deletes stored files when the database write fails', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -301,11 +375,15 @@ describe('storage compensation', () => {
       },
     )
     expect(response.status).toBe(500)
-    const lines = log.mock.calls.map((call) => call.join(' '))
-    const compensation = lines.find((line) =>
-      line.includes('compensation failed'),
-    )
-    expect(compensation).toMatch(/1 stored file\(s\): orders\/[0-9a-f]{32}$/)
+    const lines = log.mock.calls.map((call) => String(call[0]))
+    const compensation = lines
+      .filter((line) => line.startsWith('{'))
+      .map((line) => JSON.parse(line) as Record<string, unknown>)
+      .find((entry) => entry.event === 'order.file_compensation_failed')
+    expect(compensation).toMatchObject({ level: 'error', count: 1 })
+    expect(compensation?.storageKeys).toStrictEqual([
+      expect.stringMatching(/^orders\/[0-9a-f]{32}$/),
+    ])
     expect(lines.join('\n')).not.toMatch(
       /Rahasia|\.local-storage|maba-test-storage/,
     )

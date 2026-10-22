@@ -11,6 +11,7 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 - **Phase 04 — Order Submission, Private Files & Tracking:** COMPLETE / ACCEPTED.
 - **Phase 05 — Admin Operations & Order Management:** COMPLETE / ACCEPTED.
 - **Phase 06 — Remaining MVP Experience & Customer Payment UX:** IMPLEMENTED / VERIFIED (autonomous run; see `docs/ai/TASK_06.10.md`).
+- **Phase 07 — Security, Reliability & Production Hardening:** IMPLEMENTED / VERIFIED (autonomous run; see `docs/ai/TASK_07.10.md`).
 
 What exists:
 
@@ -22,6 +23,7 @@ What exists:
 - customer payment information: Cash or the owner's static QRIS (shown when configured as an https URL or website path) on the receipt, the tracking page and the member order detail, which also shows the member's payment status; payment is always confirmed manually by an Admin — no gateway;
 - duplicate-submission protection: the website sends an `Idempotency-Key` with each order, so resending after a lost response returns the original order instead of a second one;
 - bounded catalog pages (`GET /products`, `GET /services` with `page`/`pageSize`, max 100 per page);
+- production hardening: shared PostgreSQL rate limits (`RATE_LIMIT_STORE`), a malware-scanning step for uploads (`UPLOAD_SCANNER`: ClamAV or an explicit `none`), structured JSON logs (`LOG_LEVEL`), `GET /api/v1/readiness`, a tested website security-header policy (`apps/web/hosting/security-headers.ts`), a storage adapter contract, and runbooks in `docs/` (SECURITY, OPERATIONS, BACKUP_RESTORE, DEPLOYMENT);
 - shared public API contracts (`packages/shared`);
 - the PostgreSQL + Prisma persistence foundation: schema, migrations, constraints and indexes, a synthetic development seed, repositories, and a separate test-database workflow.
 

@@ -495,6 +495,20 @@ model OrderSubmissionKey {
   @@map("order_submission_keys")
 }
 
+// Shared rate-limit counters (TASK-07.02, KI-015) for RATE_LIMIT_STORE=
+// postgres: one row per limiter key (limiter name + client IP) and window,
+// updated by one atomic upsert, so every API instance shares the limits and
+// a restart does not reset them. Infrastructure only; expired rows are
+// pruned by the application.
+model RateLimitCounter {
+  key     String   @id @db.VarChar(200)
+  hits    Int
+  resetAt DateTime @map("reset_at") @db.Timestamptz(3)
+
+  @@index([resetAt])
+  @@map("rate_limit_counters")
+}
+
 // ---------------------------------------------------------------------------
 // Authentication infrastructure (TASK-03.01)
 // ---------------------------------------------------------------------------

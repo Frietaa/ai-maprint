@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   loadConfig,
   parseAllowedOrigins,
+  parseRateLimitStore,
+  parseUploadScanner,
   parseSessionSecret,
   parseTrustProxy,
 } from './env.js'
@@ -118,5 +120,63 @@ describe('storage and upload configuration', () => {
     ]) {
       expect(() => loadConfig({ ...baseEnv, ...env })).toThrow(/UPLOAD_MAX/)
     }
+  })
+})
+
+describe('RATE_LIMIT_STORE', () => {
+  it('defaults to the shared store in production and memory elsewhere', () => {
+    expect(parseRateLimitStore(undefined, true)).toBe('postgres')
+    expect(parseRateLimitStore(undefined, false)).toBe('memory')
+    expect(loadConfig(baseEnv).rateLimitStore).toBe('memory')
+    expect(
+      loadConfig({ ...baseEnv, RATE_LIMIT_STORE: 'postgres' }).rateLimitStore,
+    ).toBe('postgres')
+  })
+
+  it('rejects unknown stores without echoing values', () => {
+    expect(() => parseRateLimitStore('redis', false)).toThrow(
+      'Invalid RATE_LIMIT_STORE: expected "postgres" or "memory"',
+    )
+  })
+})
+
+describe('UPLOAD_SCANNER', () => {
+  it('defaults to none outside production', () => {
+    expect(loadConfig(baseEnv).uploadScanner).toStrictEqual({ kind: 'none' })
+  })
+
+  it('must be chosen explicitly in production', () => {
+    expect(() => parseUploadScanner({}, true)).toThrow(
+      /Missing required environment variable: UPLOAD_SCANNER/,
+    )
+    expect(parseUploadScanner({ UPLOAD_SCANNER: 'none' }, true)).toStrictEqual({
+      kind: 'none',
+    })
+  })
+
+  it('configures clamd with defaults and validation', () => {
+    expect(
+      parseUploadScanner(
+        { UPLOAD_SCANNER: 'clamav', CLAMAV_HOST: 'clamd' },
+        true,
+      ),
+    ).toStrictEqual({
+      kind: 'clamav',
+      host: 'clamd',
+      port: 3310,
+      timeoutMs: 30_000,
+    })
+    expect(() =>
+      parseUploadScanner({ UPLOAD_SCANNER: 'clamav' }, false),
+    ).toThrow('Missing required environment variable: CLAMAV_HOST')
+    expect(() =>
+      parseUploadScanner(
+        { UPLOAD_SCANNER: 'clamav', CLAMAV_HOST: 'c', CLAMAV_PORT: '99999' },
+        false,
+      ),
+    ).toThrow(/Invalid CLAMAV_PORT/)
+    expect(() =>
+      parseUploadScanner({ UPLOAD_SCANNER: 'virustotal' }, false),
+    ).toThrow('Invalid UPLOAD_SCANNER: expected "clamav" or "none"')
   })
 })
