@@ -6,7 +6,9 @@ import { corsAllowlist } from './middleware/cors.js'
 import { csrfProtection } from './middleware/csrf.js'
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js'
 import {
+  type AdminRateLimits,
   type AuthRateLimits,
+  createAdminRateLimiters,
   createAuthRateLimiters,
   createOrderRateLimiters,
   type OrderRateLimits,
@@ -15,6 +17,7 @@ import { requestId } from './middleware/request-id.js'
 import { securityHeaders } from './middleware/security-headers.js'
 import { createSessionManager } from './middleware/session.js'
 import { createAccountRouter } from './routes/account.routes.js'
+import { createAdminRouter } from './routes/admin.routes.js'
 import { createAuthRouter } from './routes/auth.routes.js'
 import { createOrderRouter } from './routes/order.routes.js'
 import { createOrderTrackingRouter } from './routes/order-tracking.routes.js'
@@ -72,6 +75,8 @@ export interface AppOptions {
   // Order submission. Without it POST /orders answers 503 (tracking and
   // member history still work).
   orders?: OrderOptions
+  // Admin anti-abuse limits; defaults in rate-limit.ts.
+  adminRateLimits?: AdminRateLimits
 }
 
 // Responses that depend on the session must never be cached.
@@ -87,6 +92,7 @@ export function createApp({
   trustProxy = false,
   auth,
   orders,
+  adminRateLimits,
 }: AppOptions) {
   const app = express()
 
@@ -163,6 +169,19 @@ export function createApp({
         : (_req, _res, next) => {
             next()
           },
+    }),
+  )
+
+  const adminLimiters = createAdminRateLimiters(adminRateLimits)
+  app.use(
+    `${API_PREFIX}/admin`,
+    createAdminRouter({
+      getDb,
+      sessions,
+      storage: orders?.storage ?? null,
+      mutationLimiter: adminLimiters.mutations,
+      downloadLimiter: adminLimiters.downloads,
+      now: orders?.now ?? (() => new Date()),
     }),
   )
 

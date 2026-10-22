@@ -9,6 +9,7 @@
 // and uploaded files.
 import { randomBytes } from 'node:crypto'
 import pg from 'pg'
+import { provisionAdmin } from '../src/admin/admin-provisioning.js'
 import { createApp } from '../src/app.js'
 import { parseAllowedOrigins } from '../src/config/env.js'
 import { createPgSessionStore } from '../src/db/session-store.js'
@@ -23,6 +24,14 @@ import { loadTestDatabaseUrl } from './test-database.js'
 
 const db = createTestDbClient()
 await applyE2eFixtures(db)
+// Synthetic Admin for the Admin E2E (test database only; removed with the
+// other *.test.invalid accounts by the teardown). Not a real credential.
+await provisionAdmin(db, {
+  email: 'admin@e2e.test.invalid',
+  name: 'Admin E2E',
+  password: 'e2e admin password',
+  promote: false,
+})
 // Uploaded E2E documents go to an isolated temp directory (removed again by
 // `e2e:fixtures:clean`), never to the development storage.
 prepareE2eStorage()

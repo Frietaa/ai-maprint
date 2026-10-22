@@ -1,5 +1,15 @@
 import type { RouteObject } from 'react-router'
 import { PublicLayout } from '../components/layout/PublicLayout.tsx'
+import { AdminLayout } from '../features/admin/AdminLayout.tsx'
+import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage.tsx'
+import { AdminLocationsPage } from '../pages/admin/AdminLocationsPage.tsx'
+import { AdminOrderDetailPage } from '../pages/admin/AdminOrderDetailPage.tsx'
+import { AdminOrdersPage } from '../pages/admin/AdminOrdersPage.tsx'
+import { AdminProductsPage } from '../pages/admin/AdminProductsPage.tsx'
+import { AdminServicesPage } from '../pages/admin/AdminServicesPage.tsx'
+import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage.tsx'
+import { AdminLoginPage } from '../pages/admin/AdminLoginPage.tsx'
+import { AdminNotFoundPage } from '../pages/admin/AdminNotFoundPage.tsx'
 import { AccountOrderDetailPage } from '../pages/AccountOrderDetailPage.tsx'
 import { AccountOrdersPage } from '../pages/AccountOrdersPage.tsx'
 import { AccountPage } from '../pages/AccountPage.tsx'
@@ -16,8 +26,24 @@ import { TrackOrderPage } from '../pages/TrackOrderPage.tsx'
 
 // Routes (Architecture §8): public pages with order forms, tracking,
 // sign-in/sign-up and the member account with order history. "Continue as
-// Guest" is a link, not a route. Admin routes belong to a later phase.
+// Guest" is a link, not a route. The Admin area (/admin/*) has its own
+// shell and guard; /admin/login is outside it.
 export const routes: RouteObject[] = [
+  { path: 'admin/login', element: <AdminLoginPage /> },
+  {
+    path: 'admin',
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminDashboardPage /> },
+      { path: 'orders', element: <AdminOrdersPage /> },
+      { path: 'orders/:publicId', element: <AdminOrderDetailPage /> },
+      { path: 'products', element: <AdminProductsPage /> },
+      { path: 'services', element: <AdminServicesPage /> },
+      { path: 'locations', element: <AdminLocationsPage /> },
+      { path: 'settings', element: <AdminSettingsPage /> },
+      { path: '*', element: <AdminNotFoundPage /> },
+    ],
+  },
   {
     element: <PublicLayout />,
     children: [

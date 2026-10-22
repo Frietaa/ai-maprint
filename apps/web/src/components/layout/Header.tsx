@@ -122,6 +122,20 @@ function AccountLinks({ layout, onNavigate }: AccountLinksProps) {
   const wrapper = stacked ? 'flex flex-col gap-2' : 'flex items-center gap-2'
   const block = stacked ? 'flex justify-center py-3' : ''
 
+  if (user?.role === 'ADMIN') {
+    return (
+      <div className={wrapper}>
+        <Link
+          to="/admin"
+          onClick={onNavigate}
+          className={`${navLinkClass({ isActive: false })} ${block}`}
+        >
+          Admin
+        </Link>
+      </div>
+    )
+  }
+
   if (user) {
     return (
       <div className={wrapper}>

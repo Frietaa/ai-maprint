@@ -49,3 +49,24 @@ export function loginPathFor(location: {
   const target = `${location.pathname}${location.search}`
   return `/login?redirect=${encodeURIComponent(target)}`
 }
+
+// Admin area: only internal /admin paths (never the Admin login itself).
+export const DEFAULT_ADMIN_PATH = '/admin'
+
+export function safeAdminRedirectPath(raw: string | null | undefined): string {
+  const path = safeRedirectPath(raw, DEFAULT_ADMIN_PATH)
+  const pathname = path.split(/[?#]/)[0] ?? ''
+  if (pathname !== '/admin' && !pathname.startsWith('/admin/')) {
+    return DEFAULT_ADMIN_PATH
+  }
+  if (pathname === '/admin/login') return DEFAULT_ADMIN_PATH
+  return path
+}
+
+export function adminLoginPathFor(location: {
+  pathname: string
+  search: string
+}): string {
+  const target = `${location.pathname}${location.search}`
+  return `/admin/login?redirect=${encodeURIComponent(target)}`
+}

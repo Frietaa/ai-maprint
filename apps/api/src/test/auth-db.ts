@@ -26,9 +26,9 @@ import { loadTestDatabaseUrl } from '../../scripts/test-database.js'
 import { type AppOptions, createApp } from '../app.js'
 import { createPgSessionStore } from '../db/session-store.js'
 import type { UserRole } from '../generated/prisma/client.js'
-import { testDb } from './test-db.js'
+import { countQueries, testDb } from './test-db.js'
 
-export { testDb }
+export { countQueries, testDb }
 
 const pool = new pg.Pool({
   connectionString: loadTestDatabaseUrl().toString(),

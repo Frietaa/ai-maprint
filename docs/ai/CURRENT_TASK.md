@@ -6,31 +6,37 @@ None active.
 
 \## Status
 
-Phase 04 (Order Submission, Private Files \& Tracking) ACCEPTED and
-COMPLETE (human-approved 2026-10-21).
+Phase 05 (Admin Operations \& Order Management) ACCEPTED and COMPLETE
+(human-approved 2026-10-22).
 
-Last task: PHASE-04 / TASK-04.10 Phase 04 Final Verification: PASS
-(docs/ai/TASK\_04.10.md).
+Last task: PHASE-05 / TASK-05.10 Phase 05 Final Verification: PASS
+(docs/ai/TASK\_05.10.md).
 
-Phase 05 has NOT started.
+Human-approved rule recorded: laptop pickup fee = Rp0 up to 5 km, else
+ceil(distanceKm - 5) x Rp2,000 (each started extra km counts in full;
+Admin records the distance; no Maps API).
+
+Phase 06 has NOT started.
 
 \## Carried-forward findings (not fixed at closure)
 
-\- KI-012: list endpoints not paginated — LOW, deferred.
-\- KI-013: service pages match categories by name — LOW, deferred.
+\- KI-012: public list endpoints not paginated — LOW, deferred.
+\- KI-013: service pages match categories by name — LOW (Admin UI warns).
 \- KI-014: tsx watch / Prisma client dev stall — MITIGATED.
-\- KI-015: rate limits use an in-process store (auth + orders) — LOW.
+\- KI-015: in-process rate limits (auth, orders, admin) — LOW, deployment.
 \- KI-016: website hosting security headers — LOW, deployment.
 \- KI-017: no password/Google account linking — accepted decision.
-\- KI-018: 30-day completed-order file-retention cleanup — deferred.
+\- KI-018: cleanup engine implemented — MITIGATED; production scheduling
+  deferred.
 \- KI-019: production object storage / malware scanning — deferred.
 \- KI-020: no idempotency key for order submission — LOW, accepted.
-\- Phase-04 work is not yet committed to Git (owner action).
+\- KI-021: QRIS image configured/stored but not shown to customers.
+\- Phase-05 work is not yet committed to Git (owner action).
 
 \## Next Step
 
-Phase 04 accepted; awaiting Phase 05 planning.
+Phase 05 accepted; awaiting remaining-project planning.
 
 \## Stop Condition
 
-STOP. Do not begin Phase 05 without explicit instruction.
+STOP. Do not begin Phase 06 without explicit instruction.

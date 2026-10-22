@@ -9,6 +9,7 @@ Website layanan terpadu untuk jasa cetak dokumen, penjualan ATK, service laptop,
 - **Phase 02 — Public Read Experience:** COMPLETE / ACCEPTED.
 - **Phase 03 — Authentication & Identity:** COMPLETE / ACCEPTED.
 - **Phase 04 — Order Submission, Private Files & Tracking:** COMPLETE / ACCEPTED.
+- **Phase 05 — Admin Operations & Order Management:** COMPLETE / ACCEPTED.
 
 What exists:
 
@@ -16,10 +17,11 @@ What exists:
 - a read-only public REST API (`apps/api`, Express + Zod): `GET /api/v1/health`, `/public/settings`, `/locations`, `/services`, `/products`;
 - optional member accounts: email + password sign-up/sign-in (Argon2id), a Google Sign-In foundation (server-verified ID token; shown only when configured), sign-out, the `/login`, `/signup` and `/account` pages with the member profile (name, WhatsApp), and "Lanjut sebagai tamu" for guests — `POST /api/v1/auth/register|login|google|logout`, `GET /auth/me`, `GET /auth/csrf`, `GET|PATCH /account/profile`; server-side sessions in PostgreSQL behind an HttpOnly `SameSite=Lax` cookie, CSRF tokens, credentialed CORS allowlist, auth rate limits, security headers and `X-Request-ID`;
 - order requests for all four business lines — Printing (with optional private document upload: PDF, DOCX, PPTX, XLSX, JPG, PNG, validated by content), ATK (available products with quantities and a server-calculated estimate), Laptop Service (drop-off or pickup) and Software Installation (legal software only) — as Guest or Member, with a receipt, a high-entropy Public Order ID and an order-specific WhatsApp deep link (shown when a WhatsApp number is configured): `POST /api/v1/orders`; guest tracking at `/track-order` (`GET /api/v1/orders/track/:publicId`, safe minimum only); member order history at `/account/orders` (`GET /api/v1/account/orders`, `/account/orders/:publicId`). New orders stay "Menunggu Konfirmasi" (SUBMITTED);
+- an Admin area at `/admin` (sign-in at `/admin/login`, ADMIN accounts only): dashboard, order queue with filters and exact Public Order ID search, order detail with the approved status machine (409 on conflicting changes), pricing incl. the laptop pickup fee from the Admin-recorded distance (free up to 5 km, then Rp2.000 per started additional km), internal notes, manual payment confirmation (Cash / static QRIS), Admin-only private document download, management of products, services, categories, locations (opening hours, per-location services) and business settings; every sensitive change is recorded in the Admin audit log (`/api/v1/admin/*`); a 30-day completed-order file cleanup engine (`npm run files:cleanup`);
 - shared public API contracts (`packages/shared`);
 - the PostgreSQL + Prisma persistence foundation: schema, migrations, constraints and indexes, a synthetic development seed, repositories, and a separate test-database workflow.
 
-Not implemented yet: admin order processing (status management, final pricing, file download), payment confirmation and the payment workflow, the 30-day completed-order file-retention cleanup, the admin dashboard and admin login, password reset, email verification, production object storage and production deployment.
+Not implemented yet: customer-facing payment (customer QRIS display, payment gateway), notifications, production scheduling of the file-retention cleanup (the command exists), Admin account management in the UI (operator command only), password reset, email verification, production object storage, malware scanning of uploads and production deployment.
 
 ## Approved Stack
 
@@ -87,6 +89,16 @@ The seed (`apps/api/prisma/seed.ts`) adds synthetic local-development data only:
 These commands never use `DATABASE_URL` and never touch `maba_printing_dev`. They refuse to run unless `TEST_DATABASE_URL` points to a loopback host and names `maba_printing_test`, and they check `current_database()` again after connecting. Tests create their own synthetic fixtures inside transactions that are always rolled back, so they do not depend on the development seed.
 
 Data is kept in the named Docker volume `maba-printing_postgres-data`, so it survives stop/start and container recreation.
+
+## Admin Accounts (operators)
+
+Admins cannot sign up. Create one with the operator command (it uses `DATABASE_URL`, hashes the password with Argon2id and prints only the outcome):
+
+```bash
+ADMIN_EMAIL=you@example.com ADMIN_NAME="Nama Admin" ADMIN_PASSWORD="a long unique passphrase" npm run admin:create -w @maba-printing/api
+```
+
+An existing member account is promoted only with `-- --promote`; an existing Admin is left unchanged. Sign in at `/admin/login`. `npm run files:cleanup -w @maba-printing/api` deletes order documents 30 days after completion (idempotent; scheduling is a deployment task).
 
 ## Commands
 

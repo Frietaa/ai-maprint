@@ -60,6 +60,14 @@ COMPLETE (human-approved 2026-10-21; verification PASS in TASK-04.10).
 
 Plan in docs/ai/PHASE\_04.md, tasks TASK\_04.01..04.10.
 
+
+
+Phase 05 (Admin Operations \& Order Management): ACCEPTED and COMPLETE
+
+(human-approved 2026-10-22; verification PASS in TASK-05.10). Plan in
+
+docs/ai/PHASE\_05.md, tasks TASK\_05.01..05.10.
+
 Plan in docs/ai/PHASE\_03.md, tasks TASK\_03.01..03.10.
 
 TASK-01.01 added the Prisma 7 + PostgreSQL tooling foundation
@@ -3258,11 +3266,315 @@ Phase 04 human acceptance (2026-10-21): APPROVED
 
 
 
+\## Phase 05 — Admin Operations \& Order Management (ACCEPTED / COMPLETE)
+
+
+
+Baseline: Phase 04 committed (9175253), clean tree, only .env.example
+
+files tracked, 6 migrations unchanged. Dev data baseline (2026-10-21,
+
+created by the owner): users 1 (no ADMIN), locations 2, services 7,
+
+products 5, settings 1, orders 1, order\_files 1 (1 file in
+
+apps/api/.local-storage), payments 0, audit 0; md5 (users, locations,
+
+services, products, orders) fc87c294b95097f84fa555591e6403d8.
+
+
+
+TASK-05.01 Admin Access \& Authorization Foundation: DONE (2026-10-21)
+
+\- Shared admin-api.ts: admin paths, ORDER\_STATUS\_TRANSITIONS +
+
+  canTransition, payment methods/statuses + labels, pickup fee policy
+
+  (pickupFeeFor: <= 5 km free, else ceil(km - 5) x Rp2.000), limits,
+
+  Admin DTOs.
+
+\- /api/v1/admin router (session + CSRF section): router-level
+
+  resolvePrincipal + requireRole('ADMIN') — 401 signed out, 403 MEMBER,
+
+  inactive/demoted Admin loses access at once. Admin rate limits:
+
+  mutations 300 / 15 min (GET exempt), downloads 200 / 15 min.
+
+\- admin/audit.ts: recordAudit (same transaction), stable action codes and
+
+  entity types, changes() diff helper.
+
+\- Provisioning: `npm run admin:create` (scripts/admin-create.ts,
+
+  DATABASE\_URL; ADMIN\_EMAIL / ADMIN\_NAME / ADMIN\_PASSWORD from env;
+
+  `--promote` for an existing MEMBER, role only, no reactivation; existing
+
+  ADMIN unchanged; prints only the outcome). No HTTP admin creation.
+
+\- Web: /admin/login (email + password via POST /auth/login, Admin role
+
+  required to enter, no Google), RequireAdmin guard (loading / login
+
+  redirect with safeAdminRedirectPath / MEMBER denial / error),
+
+  AdminLayout shell + nav, public header "Admin" link for ADMINs.
+
+\- Tests: API admin-access 10, web admin-access 18.
+
+
+
+TASK-05.02..05.08 — API (2026-10-21; web pages follow in the same tasks)
+
+\- Admin order module (src/admin/admin-order.\*): GET /admin/dashboard
+
+  (groupBy status counts, pending payment confirmations, 5 recent;
+
+  bounded query count), GET /admin/orders (page, pageSize <= 50, status,
+
+  type, locationId, paymentStatus incl. "no payment = UNPAID", exact
+
+  publicId; newest first), GET /admin/orders/:publicId (operational DTO:
+
+  snapshot, member name/email, items, extensions, pricing, notes,
+
+  payment with confirming Admin name, file metadata with IDs, timeline
+
+  with actor names, allowedTransitions; no hashes/Google IDs/keys).
+
+\- Commands (strict bodies, one transaction with audit):
+
+  PATCH …/status {fromStatus, toStatus}: approved machine only (409
+
+  "Status change not allowed"), stale/concurrent change 409 "Order status
+
+  has changed" via conditional updateMany; completedAt on COMPLETED;
+
+  history row with Admin actor; rollback if the audit insert fails.
+
+  PATCH …/pricing {estimatedTotal?, finalTotal?, distanceKm?}: INTEGER
+
+  Rupiah; distanceKm only for laptop PICKUP, pickupFee = 0 up to 5 km
+
+  else ceil(km - 5) x 2000; item snapshots unchanged.
+
+  PATCH …/notes {adminNotes}: <= 5000 plain text; audit change kind only.
+
+  PATCH …/payment {method, status, amount}: one lazily created Payment;
+
+  confirmedById/At set on entering PAID, kept while PAID, cleared on
+
+  leaving PAID.
+
+\- Download GET …/files/:fileId/download: file of that order, not deleted,
+
+  StorageService stream, res.attachment (content-disposition encoding),
+
+  stored MIME, nosniff, private no-store, audit ORDER\_FILE\_DOWNLOADED
+
+  (file id, size), 200 / 15 min limiter; 404 for foreign/deleted/missing.
+
+\- Retention (src/admin/file-retention.ts + `npm run files:cleanup`):
+
+  COMPLETED and completedAt <= now - 30 days, deletedAt null; deletedAt
+
+  set after deletion (missing object = deleted); failures keep the row,
+
+  logged by file id; idempotent; refuses NODE\_ENV=production (local
+
+  storage only). No scheduler.
+
+\- Catalog/locations/settings (src/admin/admin-catalog.\*): list (incl.
+
+  inactive), create, update for product/service categories, products,
+
+  services, locations; PUT /admin/locations/:id/services/:serviceId
+
+  {isAvailable} (LocationService upsert); no DELETE routes; audit
+
+  \*\_CREATED/UPDATED/DEACTIVATED/REACTIVATED, LOCATION\_SERVICE\_
+
+  AVAILABILITY\_UPDATED; FIXED services need a price (create and update);
+
+  opening hours validated (all 7 days, <= 4 sorted non-overlapping
+
+  HH:mm ranges, note) in the existing JSON shape; image refs https URL
+
+  or root-relative path only. GET/PATCH /admin/settings upserts id = 1;
+
+  social links http(s), platform keys [a-z0-9\_-]; audit field names +
+
+  small before/after (never publicInfo text); public settings reflect
+
+  changes immediately.
+
+\- Test cleanup (test DB only) now also deletes admin\_audit\_logs before
+
+  test accounts (audit rows reference their actor).
+
+\- Verified: API unit 152, DB 308 (admin-orders 62, file-retention 6,
+
+  admin-catalog 37, admin-access 10 + earlier suites).
+
+
+
+TASK-05.02..05.08 — Web (2026-10-21): DONE
+
+\- Admin pages /admin (dashboard: open-status counts linking to filtered
+
+  queue, pending payment confirmations, recent orders), /admin/orders
+
+  (filters in the URL, exact ID search, pagination), /admin/orders/
+
+  :publicId (status buttons for allowed transitions only; pricing with
+
+  pickup-fee preview; payment; internal notes; downloads via API links;
+
+  retained files marked deleted; page-level notice for success and 409
+
+  conflicts, forms remount with fresh data), /admin/products,
+
+  /admin/services (KI-013 naming warning), /admin/locations (structured
+
+  opening-hours editor, optimistic per-location service toggles),
+
+  /admin/settings (sends only changed fields so legacy values never block
+
+  saves; refreshes public settings).
+
+\- Shared: pickupFeeFor, canTransition tests.
+
+
+
+TASK-05.09 Admin Security, Audit \& E2E: DONE (2026-10-21)
+
+\- Fixes found in this pass: CORS preflight now allows PUT (location
+
+  service toggle cross-origin); settings form sent unchanged legacy
+
+  values (bare storage-key QRIS ref) that the new validation rejected —
+
+  now sends changed fields only; admin tables `relative` so sr-only
+
+  header labels cannot widen the page at 360 px.
+
+\- E2E: synthetic Admin provisioned by the E2E API (test DB only);
+
+  fixture cleanup also removes catalog rows under E2E categories and all
+
+  audit rows (test DB only). Playwright +4 admin journeys: member denied
+
+  (UI + API 403); guest order -> admin login with safe redirect ->
+
+  download (attachment name) -> pricing -> notes -> SUBMITTED..COMPLETED
+
+  -> payment PAID by Admin E2E -> public tracking "Pesanan Selesai"
+
+  without notes/prices -> admin PATCH without CSRF 403; product created
+
+  and public at once, location service toggle persisted (cross-origin
+
+  PUT), social link shown in the footer, then restored; admin pages at
+
+  360 px without horizontal overflow.
+
+\- Operator CLIs smoke-tested against the TEST database: admin:create
+
+  (created / already-admin / missing variable; no password printed),
+
+  files:cleanup (0 eligible).
+
+\- Docs: README (status, Admin section, operator commands, not-yet list),
+
+  apps/api/.env.example (ADMIN\_\* operator variables, files:cleanup).
+
+  Known issues: KI-018 MITIGATED (scheduler + production storage remain),
+
+  KI-015 extended (admin limiters), new KI-021 (QRIS image configuration
+
+  only).
+
+\- Verified: format, lint, typecheck, build clean; npm test 397 (api 152,
+
+  web 229, shared 16); test:db 308; Playwright 21; test DB and test/E2E
+
+  storage empty afterwards.
+
+
+
+TASK-05.10 Phase 05 Final Verification: PASS (2026-10-21)
+
+\- Independent re-verification; no fixes. Evidence in docs/ai/TASK\_05.10.md.
+
+\- Git scope clean, no dependency or migration changes; dev/test migration
+
+  status clean, test DB rebuilt; format/lint/typecheck/build clean;
+
+  npm test 397, test:db 308, Playwright 21; live Admin API 35/35 with
+
+  audit rows verified; dev DB fingerprint and dev storage unchanged.
+
+\- Findings: LOW KI-012, KI-013, KI-015, KI-016, KI-019, KI-020, KI-021,
+
+  KI-018 mitigated (no scheduler), Phase-05 uncommitted; INFO catalog
+
+  lists capped at 500, Admin accounts via operator command only, pickup
+
+  fee per started km, Content-Length from metadata, synthetic E2E admin
+
+  credential.
+
+
+
+Phase 05 human acceptance (2026-10-22): APPROVED
+
+\- Phase 05 verification PASS accepted; Phase 05 ACCEPTED / COMPLETE.
+
+\- Human-approved business rule (2026-10-22) — laptop pickup fee:
+
+  \- distance <= 5 km: Rp0
+
+  \- distance > 5 km: ceil(distanceKm - 5) x Rp2,000
+
+  \- each started additional kilometre is charged as one full additional
+
+    kilometre
+
+  \- no Maps API; the Admin supplies/records the operational distance
+
+  Accepted for the MVP unless a future explicit business decision changes
+
+  it. Interprets PRD §11 "Rp2.000 per additional km" (frozen PRD not
+
+  edited); implemented by pickupFeeFor in packages/shared/src/admin-api.ts.
+
+\- Findings carried forward unchanged (not fixed at closure): KI-012,
+
+  KI-013 LOW / deferred (Admin UI warns about KI-013); KI-014 MITIGATED;
+
+  KI-015 in-process rate limits (auth, orders, admin) LOW; KI-016 website
+
+  hosting headers LOW; KI-017 accepted Google linking decision; KI-018
+
+  MITIGATED (cleanup engine implemented, production scheduling
+
+  deferred); KI-019 production object storage / malware scanning
+
+  deferred; KI-020 no idempotency key for order submission LOW; KI-021
+
+  QRIS image configured/stored but not shown to customers.
+
+\- Phase-05 work not yet committed (owner action).
+
+
+
 \## Next Action
 
 
 
-Phase 04 accepted (2026-10-21); awaiting Phase 05 planning. Do not
+Phase 05 accepted (2026-10-22); awaiting remaining-project planning. Do
 
-start Phase 05 without explicit instruction.
+not start Phase 06 without explicit instruction.
 

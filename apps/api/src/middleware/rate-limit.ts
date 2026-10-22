@@ -35,11 +35,15 @@ function limiter(
   windowMs: number,
   limit: number,
   skipSuccessfulRequests: boolean,
+  safeMethodsExempt = false,
 ): RequestHandler {
   return rateLimit({
     windowMs,
     limit,
     skipSuccessfulRequests,
+    ...(safeMethodsExempt && {
+      skip: (req) => req.method === 'GET' || req.method === 'HEAD',
+    }),
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     // Same error shape as every other API error; nothing about whether the
@@ -86,5 +90,28 @@ export function createOrderRateLimiters(
   return {
     submit: limiter(limits.windowMs, limits.submissions, false),
     track: limiter(limits.windowMs, limits.trackingLookups, false),
+  }
+}
+
+// Authenticated Admin work: generous anti-abuse budgets (session, role and
+// CSRF are the real protection). Mutations only; reads are not limited.
+export interface AdminRateLimits {
+  windowMs: number
+  mutations: number
+  downloads: number
+}
+
+export const DEFAULT_ADMIN_RATE_LIMITS: AdminRateLimits = {
+  windowMs: 15 * 60 * 1000,
+  mutations: 300,
+  downloads: 200,
+}
+
+export function createAdminRateLimiters(
+  limits: AdminRateLimits = DEFAULT_ADMIN_RATE_LIMITS,
+): { mutations: RequestHandler; downloads: RequestHandler } {
+  return {
+    mutations: limiter(limits.windowMs, limits.mutations, false, true),
+    downloads: limiter(limits.windowMs, limits.downloads, false),
   }
 }

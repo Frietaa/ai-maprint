@@ -1994,3 +1994,91 @@ Changes:
 Production code changed:
 
 None.
+
+
+
+\---
+
+
+
+\## PHASE 05 — Admin Operations \& Order Management (TASK-05.01..05.09)
+
+Date: 2026-10-21
+
+Status:
+IMPLEMENTED (autonomous run; TASK-05.10 verification follows)
+
+Changes:
+\- docs/ai/PHASE\_05.md and TASK\_05.01..05.10.md created
+\- No migrations, no new dependencies
+\- Shared admin-api.ts (transitions, payment enums/labels, pickup fee,
+  limits, Admin DTOs)
+\- API /api/v1/admin/\* (ADMIN only, CSRF, generous rate limits):
+  dashboard, order queue/detail, status machine with optimistic
+  concurrency, pricing (pickup fee), notes, payment confirmation, file
+  download, catalog/location/settings management; AdminAuditLog for every
+  sensitive mutation in the same transaction; retention cleanup service
+\- Operator commands: npm run admin:create, npm run files:cleanup
+\- Web: /admin/login, Admin shell and guard, dashboard, orders, order
+  detail, products, services, locations, settings; header Admin link
+\- CORS preflight allows PUT
+\- Tests: API unit 152, DB 308, web 229, shared 16, Playwright 21
+\- Known issues: KI-018 mitigated, KI-015 extended, KI-021 added
+
+Production code changed:
+
+Yes (Phase 05 scope only).
+
+
+
+\---
+
+
+
+\## PHASE 05 / TASK-05.10 — Phase 05 Final Verification
+
+Date: 2026-10-21
+
+Status:
+VERIFICATION PASS (awaiting human acceptance)
+
+Changes:
+None to code, schema, storage or the development database (verification
+only; the test database was rebuilt from migrations and left empty).
+Project memory, PHASE\_05.md and TASK\_05.10.md result recorded.
+
+Findings:
+LOW KI-012, KI-013, KI-015, KI-016, KI-019, KI-020, KI-021, KI-018
+mitigated, Phase-05 work uncommitted; INFO items in TASK\_05.10.md.
+
+Production code changed:
+
+None.
+
+
+
+\---
+
+
+
+\## PHASE 05 — Human Acceptance \& Closure
+
+Date: 2026-10-22
+
+Status:
+ACCEPTED / COMPLETE (human-approved)
+
+Changes:
+\- PROJECT\_STATE.md / CURRENT\_TASK.md: Phase 05 accepted; awaiting
+  remaining-project planning
+\- PHASE\_05.md status and decision record, TASK\_05.10.md acceptance and
+  README Development Status updated
+\- Human-approved business rule recorded: laptop pickup fee Rp0 up to
+  5 km, else ceil(distanceKm - 5) x Rp2,000 (each started extra km in
+  full; Admin-recorded distance; no Maps API)
+\- Findings preserved: KI-018 mitigated, KI-021, KI-015, KI-016, KI-019,
+  KI-020, KI-012, KI-013 and older issues
+
+Production code changed:
+
+None.

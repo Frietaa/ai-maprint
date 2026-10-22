@@ -108,7 +108,7 @@ describe('CORS allowlist', () => {
       .set('Access-Control-Request-Headers', 'content-type, x-csrf-token')
     expect(ok.status).toBe(204)
     expect(ok.headers['access-control-allow-methods']).toBe(
-      'GET, POST, PATCH, OPTIONS',
+      'GET, POST, PATCH, PUT, OPTIONS',
     )
     expect(ok.headers['access-control-allow-headers']).toBe(
       'Content-Type, X-CSRF-Token',

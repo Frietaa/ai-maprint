@@ -40,4 +40,32 @@ describe('@maba-printing/shared entry point', () => {
     )
     expect(shared.parsePublicOrderId('MP-2026-%')).toBeNull()
   })
+
+  it('encodes the approved order state machine', () => {
+    const allowed = Object.entries(shared.ORDER_STATUS_TRANSITIONS).flatMap(
+      ([from, tos]) => tos.map((to) => `${from}>${to}`),
+    )
+    expect(allowed.sort()).toStrictEqual(
+      [
+        'SUBMITTED>CONFIRMED',
+        'SUBMITTED>CANCELLED',
+        'CONFIRMED>IN_PROGRESS',
+        'CONFIRMED>CANCELLED',
+        'IN_PROGRESS>READY',
+        'IN_PROGRESS>CANCELLED',
+        'READY>COMPLETED',
+      ].sort(),
+    )
+    expect(shared.canTransition('READY', 'CANCELLED')).toBe(false)
+    expect(shared.canTransition('COMPLETED', 'SUBMITTED')).toBe(false)
+  })
+
+  it('computes the pickup fee (free up to 5 km, Rp2.000 per started km)', () => {
+    expect(shared.pickupFeeFor(0)).toBe(0)
+    expect(shared.pickupFeeFor(5)).toBe(0)
+    expect(shared.pickupFeeFor(5.01)).toBe(2000)
+    expect(shared.pickupFeeFor(6)).toBe(2000)
+    expect(shared.pickupFeeFor(6.5)).toBe(4000)
+    expect(shared.pickupFeeFor(5.1)).toBe(2000)
+  })
 })

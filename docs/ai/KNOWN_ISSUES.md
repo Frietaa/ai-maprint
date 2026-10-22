@@ -626,6 +626,8 @@ Description: Sign-in failure (20 / 15 min), registration (10 / 15 min),
 
 order submission (10 / 15 min) and order tracking (60 / 15 min; Phase 04)
 
+and Admin mutations (300 / 15 min) and downloads (200 / 15 min; Phase 05)
+
 limits per client IP use the library's default in-memory store.
 
 Counters reset on restart and are not shared between instances.
@@ -730,7 +732,19 @@ Title: Files of COMPLETED orders are not yet deleted after 30 days
 
 Severity: Low
 
-Status: OPEN (deferred: needs the Admin order lifecycle)
+Status: MITIGATED (TASK-05.06, 2026-10-21): orders reach COMPLETED (sets
+
+completedAt) through the Admin status machine, and the idempotent cleanup
+
+(cleanupExpiredOrderFiles / `npm run files:cleanup`) deletes files at
+
+completedAt + 30 days and records deletedAt. Remaining gap: no scheduler
+
+runs it automatically (deployment-owned), and it supports the local
+
+storage adapter only (KI-019).
+
+Previous status: OPEN (deferred: needs the Admin order lifecycle)
 
 Discovered In: TASK-04.03
 
@@ -811,6 +825,38 @@ business (WhatsApp / Admin).
 Recommended Action: Consider a client-generated idempotency key when the
 
 Admin order workflow exists.
+
+
+
+\### KI-021 — QRIS Image Is Configuration Only
+
+
+
+ID: KI-021
+
+Title: The QRIS image reference is stored but not shown to customers
+
+Severity: Low
+
+Status: OPEN (accepted: no customer payment UI in scope yet)
+
+Discovered In: TASK-05.08
+
+Description: Admins can set BusinessSettings.qrisImageRef (https URL or
+
+root-relative path) and confirm QRIS payments manually, but no customer
+
+page displays the QRIS image and there is no upload for it. Older values
+
+may be bare storage keys (e.g. the development seed); the settings form
+
+leaves untouched values as they are.
+
+Impact: Customers receive QRIS details through WhatsApp or at the counter.
+
+Recommended Action: Add a customer payment view (and an image upload)
+
+when the payment experience is planned.
 
 
 

@@ -167,7 +167,7 @@ export function isCsrfRejection(error: unknown): boolean {
 // itself. A CSRF rejection (expired or rotated session) refreshes the token
 // and retries exactly once.
 export async function apiSend<T extends { data: unknown }>(
-  method: 'POST' | 'PATCH',
+  method: 'POST' | 'PATCH' | 'PUT',
   path: string,
   body?: unknown,
 ): Promise<T> {

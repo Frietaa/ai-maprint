@@ -31,7 +31,7 @@ export function corsAllowlist(
     res.set('Access-Control-Allow-Credentials', 'true')
     res.set('Access-Control-Expose-Headers', REQUEST_ID_HEADER)
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
+      res.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, OPTIONS')
       res.set('Access-Control-Allow-Headers', `Content-Type, ${CSRF_HEADER}`)
       res.set('Access-Control-Max-Age', '600')
       res.status(204).end()

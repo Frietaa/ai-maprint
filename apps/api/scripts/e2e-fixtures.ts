@@ -4,8 +4,8 @@
 // test database) and removed again by removeE2eFixtures().
 //
 // Accounts created by automated tests (API DB tests and E2E) always use a
-// reserved *.test.invalid email domain; removeTestAccounts() deletes them and
-// every session row of the test database.
+// reserved *.test.invalid email domain; removeTestAccounts() deletes them,
+// every audit row and every session row of the test database.
 //
 // CLI: tsx scripts/e2e-fixtures.ts clean
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -68,10 +68,12 @@ export async function removeAllOrders(db: DbClient): Promise<void> {
 export async function removeE2eFixtures(db: DbClient): Promise<void> {
   await assertTestDatabase(db)
   await removeAllOrders(db)
-  await db.$executeRaw`DELETE FROM location_services WHERE location_id::text LIKE ${PREFIX} OR service_id::text LIKE ${PREFIX}`
-  await db.$executeRaw`DELETE FROM services WHERE id::text LIKE ${PREFIX}`
+  // Rows the Admin E2E creates under E2E categories/locations have random
+  // IDs; they are removed through their E2E parent.
+  await db.$executeRaw`DELETE FROM location_services WHERE location_id::text LIKE ${PREFIX} OR service_id::text LIKE ${PREFIX} OR service_id IN (SELECT id FROM services WHERE category_id::text LIKE ${PREFIX})`
+  await db.$executeRaw`DELETE FROM services WHERE id::text LIKE ${PREFIX} OR category_id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM service_categories WHERE id::text LIKE ${PREFIX}`
-  await db.$executeRaw`DELETE FROM products WHERE id::text LIKE ${PREFIX}`
+  await db.$executeRaw`DELETE FROM products WHERE id::text LIKE ${PREFIX} OR category_id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM product_categories WHERE id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM locations WHERE id::text LIKE ${PREFIX}`
   await db.$executeRaw`DELETE FROM business_settings WHERE business_name = 'MABA PRINTING E2E'`
@@ -87,6 +89,10 @@ export const E2E_EMAIL_DOMAIN = 'e2e.test.invalid'
 export async function removeTestAccounts(db: DbClient): Promise<void> {
   await assertTestDatabase(db)
   await removeAllOrders(db)
+  // Audit rows reference their Admin actor (ON DELETE RESTRICT). In the
+  // application they are append-only; only this test-database cleanup
+  // removes them.
+  await db.$executeRaw`DELETE FROM admin_audit_logs`
   await db.$executeRaw`DELETE FROM user_sessions`
   await db.$executeRaw`DELETE FROM users WHERE email LIKE ${'%.test.invalid'}`
 }

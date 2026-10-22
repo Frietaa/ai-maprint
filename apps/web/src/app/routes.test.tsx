@@ -38,7 +38,7 @@ describe('public routes', () => {
   })
 
   it('does not expose routes of later phases', () => {
-    for (const path of ['/admin', '/admin/orders']) {
+    for (const path of ['/track-orders', '/akun']) {
       const { unmount } = renderRoute(path)
       expect(
         screen.getByRole('heading', { name: 'Halaman tidak ditemukan' }),
