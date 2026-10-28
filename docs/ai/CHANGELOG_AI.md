@@ -2421,3 +2421,102 @@ Changes:
 Production code changed:
 
 Yes (website header and stylesheet only).
+
+
+
+\---
+
+
+
+\## Website header navigation: grouped menus
+
+Date: 2026-10-28
+
+Status:
+DONE (owner request)
+
+Changes:
+\- Header centre navigation: Beranda, Layanan (dropdown: Printing, Service
+  Laptop, Instalasi Software) and Track (dropdown: Lokasi, Lacak
+  Pesanan); config/navigation.ts headerNavigation; footer keeps the full
+  page list (incl. ATK, which is not in the header menu)
+\- components/layout/NavMenus.tsx: accessible disclosure dropdowns
+  (click or mouse hover, one open at a time, Escape returns focus,
+  outside click / focus leave close) with fade/slide animation; mobile
+  menu panel and groups as accordions with height animation; reduced
+  motion respected
+\- Tests: unit (dropdown behavior), E2E navigation steps updated; web 264,
+  Playwright 29, preview 2 (no CSP violations)
+
+Production code changed:
+
+Yes (website header only).
+
+---
+
+\## Website homepage hero: aurora gradient
+
+Date: 2026-10-28
+
+Status:
+DONE (owner request)
+
+Changes:
+\- features/home/HomeHero.tsx: deep purple/indigo card with organic
+  blobs (violet, orange/yellow, yellow, small bubble) as plain divs with
+  CSS gradients and a soft shadow glow — no blur filters, only transform
+  is animated, so scrolling stays smooth; smaller blobs on mobile; eyebrow pill with the business name (still the h1),
+  headline "Print tugas? / Gak perlu ribet.", tagline, CTAs; yellow
+  focus ring on the dark card; animation stops for reduced motion
+\- index.css: blob-drift / blob-bob animation tokens
+\- Tests: web 264, Playwright 29, preview 2 (no CSP violations); no
+  horizontal overflow at 375 and 1280 px
+
+Production code changed:
+
+Yes (homepage hero only).
+
+---
+
+\## Website header: bundled brand logo
+
+Date: 2026-10-28
+
+Status:
+DONE (owner request)
+
+Changes:
+\- Header brand mark now shows the owner's horizontal logo
+  (apps/web/public/assets/logo.png, 782×181) instead of the initials text
+  mark; an Admin-configured logo (business_settings.logo_ref) still
+  replaces it; text mark kept as a fallback
+\- Responsive height 36 / 40 / 44 px (mobile / sm / lg); width and height
+  attributes reserve space (no layout shift)
+\- Tests: web 264, Playwright 29, preview 2 (no CSP violations); no
+  horizontal overflow at 360, 768, 1024 and 1280 px
+
+Production code changed:
+
+Yes (website header logo only).
+
+---
+
+\## Website homepage: closing call to action matches the hero
+
+Date: 2026-10-28
+
+Status:
+DONE (owner request)
+
+Changes:
+\- HomeHero.tsx: the aurora background (blobs, drift animation, scrim)
+  extracted into a shared AuroraCard, with shared button styles
+\- HomePage.tsx: "Siap mengerjakan tugas Anda?" section now uses
+  AuroraCard (centred scrim) with the hero's two-tone heading and
+  yellow/outline buttons; text, links and heading unchanged
+\- Tests: web 264, Playwright 29, preview 2; no horizontal overflow at
+  360 and 1280 px
+
+Production code changed:
+
+Yes (homepage only).

@@ -46,6 +46,10 @@ test('mobile menu is keyboard operable', async ({ page }) => {
   const mobileNav = page.getByRole('navigation', {
     name: 'Navigasi utama (seluler)',
   })
+  const track = mobileNav.getByRole('button', { name: 'Track' })
+  await track.focus()
+  await page.keyboard.press('Enter')
+  await expect(track).toHaveAttribute('aria-expanded', 'true')
   await mobileNav.getByRole('link', { name: 'Lokasi' }).focus()
   await page.keyboard.press('Enter')
 

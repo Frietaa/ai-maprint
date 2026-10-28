@@ -50,13 +50,13 @@ describe('public routes', () => {
 
 describe('primary navigation', () => {
   it('marks only the current page with aria-current', () => {
-    renderRoute('/atk')
+    renderRoute('/printing')
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' })
 
-    expect(within(nav).getByRole('link', { name: 'ATK' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    fireEvent.click(within(nav).getByRole('button', { name: 'Layanan' }))
+    expect(
+      within(nav).getByRole('link', { name: /^Printing/ }),
+    ).toHaveAttribute('aria-current', 'page')
     expect(
       within(nav).getByRole('link', { name: 'Beranda' }),
     ).not.toHaveAttribute('aria-current')
@@ -66,11 +66,62 @@ describe('primary navigation', () => {
     renderRoute('/')
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' })
 
-    fireEvent.click(within(nav).getByRole('link', { name: 'Lokasi' }))
+    fireEvent.click(within(nav).getByRole('button', { name: 'Track' }))
+    fireEvent.click(within(nav).getByRole('link', { name: /^Lokasi/ }))
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Lokasi' }),
     ).toBeInTheDocument()
+  })
+
+  it('opens one dropdown at a time and hides closed ones', () => {
+    renderRoute('/')
+    const nav = screen.getByRole('navigation', { name: 'Navigasi utama' })
+    const layanan = within(nav).getByRole('button', { name: 'Layanan' })
+    const track = within(nav).getByRole('button', { name: 'Track' })
+
+    expect(layanan).toHaveAttribute('aria-expanded', 'false')
+    expect(within(nav).queryByRole('link', { name: /^Printing/ })).toBeNull()
+
+    fireEvent.click(layanan)
+    expect(layanan).toHaveAttribute('aria-expanded', 'true')
+    for (const name of [
+      /^Printing/,
+      /^Service Laptop/,
+      /^Instalasi Software/,
+    ]) {
+      expect(within(nav).getByRole('link', { name })).toBeVisible()
+    }
+
+    fireEvent.click(track)
+    expect(track).toHaveAttribute('aria-expanded', 'true')
+    expect(layanan).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      within(nav).getByRole('link', { name: /^Lacak Pesanan/ }),
+    ).toBeVisible()
+  })
+
+  it('closes a dropdown on Escape and returns focus to its button', () => {
+    renderRoute('/')
+    const nav = screen.getByRole('navigation', { name: 'Navigasi utama' })
+    const layanan = within(nav).getByRole('button', { name: 'Layanan' })
+    fireEvent.click(layanan)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(layanan).toHaveAttribute('aria-expanded', 'false')
+    expect(layanan).toHaveFocus()
+  })
+
+  it('closes a dropdown on an outside click', () => {
+    renderRoute('/')
+    const nav = screen.getByRole('navigation', { name: 'Navigasi utama' })
+    const track = within(nav).getByRole('button', { name: 'Track' })
+    fireEvent.click(track)
+
+    fireEvent.pointerDown(document.body)
+
+    expect(track).toHaveAttribute('aria-expanded', 'false')
   })
 })
 
@@ -114,6 +165,7 @@ describe('mobile navigation', () => {
       name: 'Navigasi utama (seluler)',
     })
 
+    fireEvent.click(within(mobileNav).getByRole('button', { name: 'Layanan' }))
     fireEvent.click(within(mobileNav).getByRole('link', { name: 'Printing' }))
 
     expect(getToggle()).toHaveAttribute('aria-expanded', 'false')

@@ -105,6 +105,35 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-2xl: 2rem;
+
+  /*
+   * Hero aurora blobs: slow organic drift (stopped for reduced motion).
+   */
+  --animate-blob-drift: blob-drift 14s ease-in-out infinite alternate;
+  --animate-blob-drift-slow: blob-drift 20s ease-in-out infinite
+    alternate-reverse;
+  --animate-blob-bob: blob-bob 6s ease-in-out infinite alternate;
+
+  @keyframes blob-drift {
+    0% {
+      transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+    50% {
+      transform: translate(14px, -10px) rotate(2deg) scale(1.03);
+    }
+    100% {
+      transform: translate(-10px, 8px) rotate(-1.5deg) scale(0.98);
+    }
+  }
+
+  @keyframes blob-bob {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-12px);
+    }
+  }
 }
 
 @layer base {

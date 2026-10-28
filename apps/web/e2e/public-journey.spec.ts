@@ -8,6 +8,12 @@ function primaryNav(page: Page) {
   return page.getByRole('navigation', { name: 'Navigasi utama' })
 }
 
+// Header groups open as dropdowns; then the link inside is chosen.
+async function navigateVia(page: Page, group: string, link: string) {
+  await primaryNav(page).getByRole('button', { name: group }).click()
+  await primaryNav(page).getByRole('link', { name: link }).click()
+}
+
 // Intl formats "Rp 500" with a non-breaking space.
 function rupiah(amount: string): RegExp {
   return new RegExp(`Rp\\s${amount.replace('.', '\\.')}`)
@@ -30,7 +36,7 @@ test('visitor browses home, locations, a service page and ATK', async ({
   await expect(page.getByRole('contentinfo')).toContainText('+62 800-0000-0000')
 
   // Locations: opening hours with split shift, closed day and note.
-  await primaryNav(page).getByRole('link', { name: 'Lokasi' }).click()
+  await navigateVia(page, 'Track', 'Lokasi')
   await expect(page).toHaveURL(/\/locations$/)
   await expect(page).toHaveTitle('Lokasi | MABA PRINTING E2E')
   const campus = page.getByRole('article').filter({
@@ -47,7 +53,7 @@ test('visitor browses home, locations, a service page and ATK', async ({
   await expect(page.getByRole('article')).toHaveCount(2)
 
   // Printing: database services, price rules, availability by location.
-  await primaryNav(page).getByRole('link', { name: 'Printing' }).click()
+  await navigateVia(page, 'Layanan', 'Printing')
   await expect(page).toHaveURL(/\/printing$/)
   const printBw = page.getByRole('article').filter({
     has: page.getByRole('heading', { name: 'Cetak A4 Hitam Putih' }),
@@ -77,7 +83,11 @@ test('visitor browses home, locations, a service page and ATK', async ({
   await expect(page.getByRole('article')).toContainText('Cetak A4 Hitam Putih')
 
   // ATK: Rupiah prices, UNAVAILABLE visible, inactive excluded.
-  await primaryNav(page).getByRole('link', { name: 'ATK' }).click()
+  // ATK is not in the header menu; the footer links every page.
+  await page
+    .getByRole('navigation', { name: 'Navigasi footer' })
+    .getByRole('link', { name: 'ATK' })
+    .click()
   await expect(page).toHaveURL(/\/atk$/)
   const paper = page.getByRole('article').filter({
     has: page.getByRole('heading', { name: 'Kertas A4 Uji' }),

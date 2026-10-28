@@ -1,8 +1,9 @@
 // MABA PRINTING logo — the single place the brand mark is rendered.
 //
-// Until the owner's logo asset is configured (business_settings.logo_ref),
-// a simple text mark is shown. To use a bundled file instead, add it under
-// src/assets/brand/ and pass it as `imageSrc`.
+// The bundled horizontal logo (public/assets/logo.png) is the default; a
+// logo configured by an Admin (business_settings.logo_ref) replaces it.
+// The text mark remains as a fallback if no image source is given.
+export const defaultLogoSrc = '/assets/logo.png'
 interface LogoProps {
   name: string
   imageSrc?: string | null
@@ -10,7 +11,18 @@ interface LogoProps {
 
 export function Logo({ name, imageSrc }: LogoProps) {
   if (imageSrc) {
-    return <img src={imageSrc} alt={name} className="h-9 w-auto" />
+    // 782×181 source: the width/height attributes reserve the space (no
+    // layout shift); CSS scales it to the header — smaller on phones.
+    return (
+      <img
+        src={imageSrc}
+        alt={name}
+        width={782}
+        height={181}
+        decoding="async"
+        className="h-9 w-auto sm:h-10 lg:h-11"
+      />
+    )
   }
   return (
     <span className="flex items-center gap-2">

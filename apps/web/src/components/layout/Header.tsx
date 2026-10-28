@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router'
-import { primaryNavigation } from '../../config/navigation.ts'
+import { headerNavigation, isNavGroup } from '../../config/navigation.ts'
 import { useCurrentUser } from '../../features/auth/use-auth.ts'
-import { Logo } from './Logo.tsx'
+import { Logo, defaultLogoSrc } from './Logo.tsx'
+import { MobileNavGroup, NavDropdown } from './NavMenus.tsx'
 
 interface HeaderProps {
   businessName: string
@@ -24,6 +25,9 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
 
 export function Header({ businessName, logoSrc }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  // At most one desktop dropdown and one mobile accordion open at a time.
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
+  const [mobileGroup, setMobileGroup] = useState<string | null>(null)
   const menuId = useId()
   const toggleRef = useRef<HTMLButtonElement>(null)
 
@@ -40,7 +44,10 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [menuOpen])
 
-  const closeMenu = () => setMenuOpen(false)
+  const closeMenu = () => {
+    setMenuOpen(false)
+    setMobileGroup(null)
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-page/90 backdrop-blur-xl">
@@ -51,18 +58,37 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
           aria-label={`${businessName} — Beranda`}
           onClick={closeMenu}
         >
-          <Logo name={businessName} imageSrc={logoSrc} />
+          <Logo name={businessName} imageSrc={logoSrc ?? defaultLogoSrc} />
         </Link>
 
         <nav aria-label="Navigasi utama" className="hidden lg:block">
           <ul className="flex items-center gap-1">
-            {primaryNavigation.map((item) => (
-              <li key={item.to}>
-                <NavLink to={item.to} end className={navLinkClass}>
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
+            {headerNavigation.map((entry) =>
+              isNavGroup(entry) ? (
+                <NavDropdown
+                  key={entry.id}
+                  group={entry}
+                  open={openGroup === entry.id}
+                  onOpenChange={(open) =>
+                    setOpenGroup((current) =>
+                      open ? entry.id : current === entry.id ? null : current,
+                    )
+                  }
+                />
+              ) : (
+                <li key={entry.to}>
+                  <NavLink
+                    to={entry.to}
+                    end
+                    className={(state) =>
+                      `${navLinkClass(state)} inline-flex py-2`
+                    }
+                  >
+                    {entry.label}
+                  </NavLink>
+                </li>
+              ),
+            )}
           </ul>
         </nav>
 
@@ -76,35 +102,55 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
           className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm font-semibold text-text-muted transition-colors hover:bg-brand-50 hover:text-brand-800 motion-safe:duration-200 lg:hidden"
           aria-expanded={menuOpen}
           aria-controls={menuId}
-          onClick={() => setMenuOpen((open) => !open)}
+          onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
         >
           <MenuIcon open={menuOpen} />
           Menu
         </button>
       </div>
 
+      {/* Slides open with a height transition; hidden (visibility) when
+          closed so its links are out of the tab order. */}
       <nav
         id={menuId}
         aria-label="Navigasi utama (seluler)"
-        hidden={!menuOpen}
-        className="border-t border-line bg-surface lg:hidden"
+        style={{ visibility: menuOpen ? 'visible' : 'hidden' }}
+        className={`grid transition-[grid-template-rows,opacity,visibility] ease-out motion-safe:duration-300 motion-reduce:transition-none lg:hidden ${
+          menuOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
       >
-        <ul className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6">
-          {primaryNavigation.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end
-                className={(state) => `${navLinkClass(state)} block py-3`}
-                onClick={closeMenu}
-              >
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-        <div className="mx-auto max-w-7xl border-t border-line px-4 py-3 sm:px-6">
-          <AccountLinks layout="stacked" onNavigate={closeMenu} />
+        <div className="overflow-hidden">
+          <div className="border-t border-line bg-surface">
+            <ul className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6">
+              {headerNavigation.map((entry) =>
+                isNavGroup(entry) ? (
+                  <MobileNavGroup
+                    key={entry.id}
+                    group={entry}
+                    open={mobileGroup === entry.id}
+                    onOpenChange={(open) =>
+                      setMobileGroup(open ? entry.id : null)
+                    }
+                    onNavigate={closeMenu}
+                  />
+                ) : (
+                  <li key={entry.to}>
+                    <NavLink
+                      to={entry.to}
+                      end
+                      className={(state) => `${navLinkClass(state)} block py-3`}
+                      onClick={closeMenu}
+                    >
+                      {entry.label}
+                    </NavLink>
+                  </li>
+                ),
+              )}
+            </ul>
+            <div className="mx-auto max-w-7xl border-t border-line px-4 py-3 sm:px-6">
+              <AccountLinks layout="stacked" onNavigate={closeMenu} />
+            </div>
+          </div>
         </div>
       </nav>
     </header>

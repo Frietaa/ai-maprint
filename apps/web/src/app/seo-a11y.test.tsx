@@ -130,7 +130,8 @@ describe('page structure', () => {
     renderRoute('/')
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' })
 
-    fireEvent.click(within(nav).getByRole('link', { name: 'ATK' }))
+    fireEvent.click(within(nav).getByRole('button', { name: 'Layanan' }))
+    fireEvent.click(within(nav).getByRole('link', { name: /^Printing/ }))
 
     expect(screen.getByRole('main')).toHaveFocus()
   })
