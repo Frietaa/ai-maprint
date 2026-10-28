@@ -100,7 +100,15 @@ Title: build/, dist/ and logs/ rules match directories at any depth
 
 Severity: Low
 
-Status: OPEN (non-blocking)
+Status: RESOLVED (2026-10-28): .gitignore, .prettierignore and the ESLint
+
+global ignores now name the real output folders (/apps/\*/dist/,
+
+/packages/\*/dist/, /logs/); build/ is no longer ignored (no build output
+
+uses it). The set of ignored files was verified unchanged.
+
+Previous status: OPEN (non-blocking)
 
 Discovered In: TASK-00.01 re-verification (finding R-1)
 

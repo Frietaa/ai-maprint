@@ -1,20 +1,110 @@
 @import 'tailwindcss';
 
 /*
- * MABA PRINTING static visual tokens. Owner-replaceable brand colors live
- * here (PRD §33: final colors/typography are configurable). Mutable business
- * data (name, WhatsApp, logo, addresses) comes from the API, never from CSS.
+ * MABA PRINTING static visual tokens.
+ *
+ * Brand identity:
+ * - Purple  : primary brand
+ * - Indigo  : secondary / structural color
+ * - Yellow  : highlight / CTA
+ * - Orange  : supporting accent
+ *
+ * Mutable business data such as business name, WhatsApp, logo, addresses,
+ * opening hours, QRIS and social links still comes from the API.
  */
 @theme {
+  /*
+   * Typography
+   *
+   * For now we use safe fallbacks.
+   * Later we can install/import:
+   * - Plus Jakarta Sans → body/UI
+   * - Barlow Condensed → display/headline
+   */
   --font-sans:
-    'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
+    'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, Roboto,
+    'Helvetica Neue', Arial, sans-serif;
 
-  --color-brand-50: var(--color-blue-50);
-  --color-brand-100: var(--color-blue-100);
-  --color-brand-600: var(--color-blue-600);
-  --color-brand-700: var(--color-blue-700);
-  --color-brand-800: var(--color-blue-800);
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Segoe UI', sans-serif;
+
+  /*
+   * MABA PRINTING — Purple
+   */
+  --color-brand-50: #f8f4fb;
+  --color-brand-100: #eee5f5;
+  --color-brand-200: #ddc9eb;
+  --color-brand-300: #c6a4dd;
+  --color-brand-400: #a875c9;
+  --color-brand-500: #874cad;
+  --color-brand-600: #6d328e;
+  --color-brand-700: #572373;
+  --color-brand-800: #42155d;
+  --color-brand-900: #350e4d;
+  --color-brand-950: #24052f;
+
+  /*
+   * Secondary Indigo
+   */
+  --color-indigo-brand-50: #f1f2fb;
+  --color-indigo-brand-100: #e2e4f6;
+  --color-indigo-brand-200: #c9ccef;
+  --color-indigo-brand-300: #a5aae4;
+  --color-indigo-brand-400: #7e84d4;
+  --color-indigo-brand-500: #5d63be;
+  --color-indigo-brand-600: #4549a0;
+  --color-indigo-brand-700: #353882;
+  --color-indigo-brand-800: #292c72;
+  --color-indigo-brand-900: #232661;
+  --color-indigo-brand-950: #15173b;
+
+  /*
+   * Highlight Yellow
+   */
+  --color-highlight-50: #fffbea;
+  --color-highlight-100: #fff4c5;
+  --color-highlight-200: #ffe987;
+  --color-highlight-300: #ffdb45;
+  --color-highlight-400: #ffcf1e;
+  --color-highlight-500: #f8c900;
+  --color-highlight-600: #dba900;
+  --color-highlight-700: #ad7d00;
+  --color-highlight-800: #8c6108;
+  --color-highlight-900: #744f0c;
+
+  /*
+   * Orange Accent
+   */
+  --color-accent-50: #fff6ed;
+  --color-accent-100: #ffead5;
+  --color-accent-200: #ffd1aa;
+  --color-accent-300: #ffad70;
+  --color-accent-400: #ff8838;
+  --color-accent-500: #ff7a1a;
+  --color-accent-600: #ed5908;
+  --color-accent-700: #c43f09;
+  --color-accent-800: #9c3210;
+  --color-accent-900: #7e2b10;
+
+  /*
+   * Neutral visual system
+   */
+  --color-page: #fafaf7;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f7f3fa;
+
+  --color-text: #1d1b22;
+  --color-text-muted: #706b77;
+
+  --color-line: #e8e2eb;
+
+  /*
+   * Radius
+   */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
 }
 
 @layer base {
@@ -23,12 +113,69 @@
   }
 
   body {
-    @apply bg-slate-50 font-sans text-slate-800 antialiased;
+    @apply bg-page font-sans text-text antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-highlight-500);
+    color: var(--color-brand-950);
   }
 
   :focus-visible {
+    /* Purple, not the yellow highlight: a focus ring needs at least 3:1
+       contrast against the light page (yellow on white is about 1.6:1). */
     outline: 2px solid var(--color-brand-600);
-    outline-offset: 2px;
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  /*
+   * Reusable display typography.
+   *
+   * Use this only for large promotional headings,
+   * not normal body/UI copy.
+   */
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  /*
+   * Main brand gradient.
+   *
+   * Use sparingly:
+   * hero accents, featured CTA or promotional surface.
+   */
+  .bg-brand-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--color-brand-900) 0%,
+      var(--color-indigo-brand-800) 62%,
+      var(--color-brand-800) 100%
+    );
+  }
+
+  /*
+   * Subtle brand-tinted surface.
+   */
+  .bg-brand-soft {
+    background:
+      radial-gradient(
+        circle at top right,
+        rgb(248 201 0 / 0.1),
+        transparent 32%
+      ),
+      linear-gradient(135deg, var(--color-brand-50), var(--color-surface));
   }
 }
 

@@ -10,12 +10,16 @@ interface HeaderProps {
 }
 
 const linkBase =
-  'rounded-md px-3 py-2 text-sm font-medium transition-colors motion-safe:duration-150'
+  'relative rounded-xl px-3 py-2 text-sm font-semibold transition-all motion-safe:duration-200'
+
+// Primary call to action (yellow highlight on dark text).
+const ctaClass =
+  'inline-flex min-h-10 items-center justify-center rounded-xl bg-highlight-500 px-5 text-sm font-bold text-brand-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-highlight-400 hover:shadow-md motion-safe:duration-200'
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
-    ? `${linkBase} bg-brand-50 text-brand-700`
-    : `${linkBase} text-slate-600 hover:bg-slate-100 hover:text-slate-900`
+    ? `${linkBase} bg-brand-50 text-brand-800`
+    : `${linkBase} text-text-muted hover:bg-brand-50 hover:text-brand-800`
 }
 
 export function Header({ businessName, logoSrc }: HeaderProps) {
@@ -39,11 +43,11 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
   const closeMenu = () => setMenuOpen(false)
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-line/80 bg-page/90 backdrop-blur-xl">
+      <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-5 px-4 sm:px-6 lg:px-8">
         <Link
           to="/"
-          className="rounded-md"
+          className="shrink-0 rounded-xl transition-opacity hover:opacity-90"
           aria-label={`${businessName} — Beranda`}
           onClick={closeMenu}
         >
@@ -69,7 +73,7 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
         <button
           ref={toggleRef}
           type="button"
-          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 lg:hidden"
+          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm font-semibold text-text-muted transition-colors hover:bg-brand-50 hover:text-brand-800 motion-safe:duration-200 lg:hidden"
           aria-expanded={menuOpen}
           aria-controls={menuId}
           onClick={() => setMenuOpen((open) => !open)}
@@ -83,9 +87,9 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
         id={menuId}
         aria-label="Navigasi utama (seluler)"
         hidden={!menuOpen}
-        className="border-t border-slate-200 bg-white lg:hidden"
+        className="border-t border-line bg-surface lg:hidden"
       >
-        <ul className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 sm:px-6">
+        <ul className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6">
           {primaryNavigation.map((item) => (
             <li key={item.to}>
               <NavLink
@@ -99,7 +103,7 @@ export function Header({ businessName, logoSrc }: HeaderProps) {
             </li>
           ))}
         </ul>
-        <div className="mx-auto max-w-6xl border-t border-slate-100 px-4 py-3 sm:px-6">
+        <div className="mx-auto max-w-7xl border-t border-line px-4 py-3 sm:px-6">
           <AccountLinks layout="stacked" onNavigate={closeMenu} />
         </div>
       </nav>
@@ -159,10 +163,11 @@ function AccountLinks({ layout, onNavigate }: AccountLinksProps) {
       >
         Masuk
       </NavLink>
+
       <Link
         to="/signup"
         onClick={onNavigate}
-        className={`inline-flex min-h-10 items-center justify-center rounded-md bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-700 ${block}`}
+        className={`${ctaClass} ${block}`}
       >
         Daftar
       </Link>

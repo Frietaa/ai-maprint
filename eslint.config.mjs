@@ -8,8 +8,8 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig([
   globalIgnores([
-    '**/dist/',
-    '**/build/',
+    'apps/*/dist/',
+    'packages/*/dist/',
     '**/coverage/',
     '**/playwright-report/',
     '**/test-results/',

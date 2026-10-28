@@ -4306,6 +4306,36 @@ Final project human review (2026-10-22): APPROVED
 
 
 
+Post-acceptance maintenance (2026-10-28)
+
+\- Fixed the in-progress website redesign (Header.tsx / index.css, owner
+
+  work in the working tree): undefined `block` on the menu toggle broke
+
+  typecheck/build and dropped lg:hidden; the Admin and Akun header links
+
+  had been replaced by placeholders (signed-in users saw Masuk/Daftar);
+
+  the keyboard focus ring used the yellow highlight (about 1.6:1 against
+
+  the light page) — now brand purple. New design tokens kept.
+
+\- KI-005 RESOLVED (anchored ignore rules); CI third-party actions pinned
+
+  to commit SHAs.
+
+\- Verified: typecheck, lint, format, build; web tests 261; test:db 336;
+
+  Playwright 29 (incl. a11y/responsive at 360/768/1280) and preview 2.
+
+\- Not changed: KI-019 (provider decision), KI-013 (needs approval of a
+
+  domain migration), KI-003 (would require editing protected
+
+  DECISIONS.md / MASTER\_PROMPT.md).
+
+
+
 \## Next Action
 
 

@@ -2396,3 +2396,28 @@ Changes:
 Production code changed:
 
 None.
+
+
+
+\---
+
+
+
+\## Post-acceptance maintenance
+
+Date: 2026-10-28
+
+Status:
+DONE (owner request: fix the remaining problems)
+
+Changes:
+\- apps/web/src/components/layout/Header.tsx: restored Admin/Akun links,
+  fixed the menu toggle (undefined variable, lg:hidden), shared CTA class
+\- apps/web/src/index.css: accessible focus ring color
+\- .gitignore, .prettierignore, eslint.config.mjs: anchored output folders
+  (KI-005 resolved)
+\- .github/workflows/ci.yml: actions pinned to commit SHAs
+
+Production code changed:
+
+Yes (website header and stylesheet only).

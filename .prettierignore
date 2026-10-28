@@ -1,6 +1,6 @@
 # Generated output
-dist/
-build/
+/apps/*/dist/
+/packages/*/dist/
 coverage/
 playwright-report/
 test-results/

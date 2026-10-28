@@ -1,9 +1,10 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
-build/
+# Build output — anchored to the real output folders (KI-005), so a
+# source folder named dist/build/logs elsewhere is never silently ignored.
+/apps/*/dist/
+/packages/*/dist/
 *.tsbuildinfo
 
 # Generated Prisma Client (recreated by `npm run db:generate` / npm install)
@@ -24,7 +25,7 @@ test-results/
 !.env.example
 
 # Logs
-logs/
+/logs/
 *.log
 npm-debug.log*
 
